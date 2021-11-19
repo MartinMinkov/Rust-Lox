@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
 	// Single-character tokens.
 	LEFTPAREN,
@@ -27,7 +27,7 @@ pub enum TokenType {
 
 	// Literals.
 	IDENTIFIER,
-	STRING,
+	STRING(String),
 	NUMBER,
 
 	// Keywords.
@@ -72,7 +72,7 @@ impl Token {
 
 impl Display for TokenType {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		match *self {
+		match &*self {
 			TokenType::LEFTPAREN => write!(f, "("),
 			TokenType::RIGHTPAREN => write!(f, ")"),
 			TokenType::LEFTBRACE => write!(f, "{{"),
@@ -93,7 +93,7 @@ impl Display for TokenType {
 			TokenType::LESS => write!(f, "<"),
 			TokenType::LESSEQUAL => write!(f, "<="),
 			TokenType::IDENTIFIER => write!(f, "IDENTIFIER"),
-			TokenType::STRING => write!(f, "STRING"),
+			TokenType::STRING(val) => write!(f, "STRING {}", val),
 			TokenType::NUMBER => write!(f, "NUMBER"),
 			TokenType::AND => write!(f, "AND"),
 			TokenType::CLASS => write!(f, "CLASS"),

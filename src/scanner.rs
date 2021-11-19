@@ -94,7 +94,9 @@ impl Scanner {
 					self.add_token(TokenType::SLASH)
 				}
 			}
-
+			' ' | '\r' | '\t' => (),
+			'\n' => self.line = self.line + 1,
+			'"' => self.string(),
 			_ => {}
 		}
 	}
@@ -130,5 +132,21 @@ impl Scanner {
 			return '\0';
 		}
 		self.source.chars().nth(self.current.into()).unwrap()
+	}
+
+	pub fn string(&mut self) {
+		while self.peek() != '"' && !self.is_at_end() {
+			if self.peek() == '\n' {
+				self.line = self.line + 1;
+			}
+			self.advance();
+		}
+
+		// Skip the trailing '"' from the string
+		self.advance();
+		let start = self.start + 1;
+		let end = self.current - 1;
+		let str_token = self.source[start.into()..end.into()].to_string();
+		self.add_token(TokenType::STRING(str_token))
 	}
 }
