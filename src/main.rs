@@ -19,7 +19,7 @@ fn main() {
     } else {
         run_prompt();
     }
-    //Expression::test_expr();
+    Expression::test_expr();
 }
 
 fn run_file(path: &str) {

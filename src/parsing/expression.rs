@@ -1,19 +1,5 @@
-use super::{Token, TokenType};
+use super::{Literal, Number, Token, TokenType};
 use std::fmt::{Display, Formatter, Result as FmtResult};
-
-pub enum Literal {
-	STRINGLITERAL(String),
-	NUMBERLITERAL(f64),
-}
-
-impl Display for Literal {
-	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		match &*self {
-			Literal::STRINGLITERAL(val) => write!(f, "{}", val),
-			Literal::NUMBERLITERAL(val) => write!(f, "{}", val),
-		}
-	}
-}
 
 pub enum Expression {
 	BinaryExpression(Box<Expression>, Token, Box<Expression>),
@@ -39,7 +25,7 @@ impl Expression {
 	pub fn test_expr() {
 		let unary_expr = Expression::Unary(
 			Token::new(TokenType::MINUS, "-".to_string(), None, 1),
-			Box::new(Expression::Literal(Literal::NUMBERLITERAL(123.0))),
+			Box::new(Expression::Literal(Literal::NUMBER(Number::INTEGER(123)))),
 		);
 		println!("Printing AST {}", unary_expr);
 	}
