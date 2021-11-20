@@ -1,6 +1,38 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, Clone)]
+pub enum Number {
+	FLOAT(f64),
+	INTEGER(i64),
+}
+
+impl Display for Number {
+	fn fmt(&self, f: &mut Formatter) -> FmtResult {
+		match &*self {
+			Number::FLOAT(val) => write!(f, "{}", val),
+			Number::INTEGER(val) => write!(f, "{}", val),
+		}
+	}
+}
+
+#[derive(Debug, Clone)]
+pub enum Literal {
+	IDENTIFIER,
+	STRING(String),
+	NUMBER(Number),
+}
+
+impl Display for Literal {
+	fn fmt(&self, f: &mut Formatter) -> FmtResult {
+		match &*self {
+			Literal::IDENTIFIER => write!(f, "IDENTIFIER"),
+			Literal::STRING(val) => write!(f, "STRING {}", val),
+			Literal::NUMBER(val) => write!(f, "NUMBER {}", val),
+		}
+	}
+}
+
+#[derive(Debug, Clone)]
 pub enum TokenType {
 	// Single-character tokens.
 	LEFTPAREN,
@@ -26,9 +58,7 @@ pub enum TokenType {
 	LESSEQUAL,
 
 	// Literals.
-	IDENTIFIER,
-	STRING(String),
-	NUMBER(f64),
+	LITERAL(Literal),
 
 	// Keywords.
 	AND,
@@ -54,13 +84,13 @@ pub enum TokenType {
 #[derive(Debug)]
 pub struct Token {
 	pub typ: TokenType,
-	lexeme: String,
-	literal: String,
+	pub lexeme: String,
+	literal: Option<Literal>,
 	line: u16,
 }
 
 impl Token {
-	pub fn new(typ: TokenType, lexeme: String, literal: String, line: u16) -> Self {
+	pub fn new(typ: TokenType, lexeme: String, literal: Option<Literal>, line: u16) -> Self {
 		Self {
 			typ,
 			lexeme,
@@ -92,9 +122,7 @@ impl Display for TokenType {
 			TokenType::GREATEREQUAL => write!(f, ">="),
 			TokenType::LESS => write!(f, "<"),
 			TokenType::LESSEQUAL => write!(f, "<="),
-			TokenType::IDENTIFIER => write!(f, "IDENTIFIER"),
-			TokenType::STRING(val) => write!(f, "STRING {}", val),
-			TokenType::NUMBER(val) => write!(f, "NUMBER {}", val),
+			TokenType::LITERAL(val) => write!(f, "{}", val),
 			TokenType::AND => write!(f, "AND"),
 			TokenType::CLASS => write!(f, "CLASS"),
 			TokenType::ELSE => write!(f, "ELSE"),
@@ -118,10 +146,9 @@ impl Display for TokenType {
 
 impl Display for Token {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		write!(
-			f,
-			"{} {} {} {}",
-			self.typ, self.lexeme, self.literal, self.line
-		)
+		match &self.literal {
+			Some(literal) => write!(f, "{} {} {} {}", self.typ, self.lexeme, literal, self.line),
+			None => write!(f, "{} {} {}", self.typ, self.lexeme, self.line),
+		}
 	}
 }

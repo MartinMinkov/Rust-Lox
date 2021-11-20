@@ -1,4 +1,4 @@
-use super::tokens::{Token, TokenType};
+use super::{Literal, Number, Token, TokenType};
 
 #[derive(Debug)]
 pub struct Scanner {
@@ -28,12 +28,7 @@ impl Scanner {
 			self.scan_token();
 		}
 
-		let eof_token = Token::new(
-			TokenType::EOF,
-			String::from(""),
-			String::from(""),
-			self.line,
-		);
+		let eof_token = Token::new(TokenType::EOF, String::from(""), None, self.line);
 		self.tokens.push(eof_token);
 	}
 
@@ -134,7 +129,7 @@ impl Scanner {
 		let text = &self.source.as_str()[start..current];
 		self
 			.tokens
-			.push(Token::new(token, text.into(), String::from(""), self.line));
+			.push(Token::new(token, text.into(), None, self.line));
 	}
 
 	pub fn match_token(&mut self, expected: char) -> bool {
@@ -182,23 +177,38 @@ impl Scanner {
 		let start = self.start + 1;
 		let end = self.current - 1;
 		let str_token = self.source[start.into()..end.into()].to_string();
-		self.add_token(TokenType::STRING(str_token))
+		self.add_token(TokenType::LITERAL(Literal::STRING(str_token)))
 	}
 
 	pub fn number(&mut self) {
 		while self.is_digit(self.peek()) {
 			self.advance();
 		}
+		let mut is_float: bool = false;
 		if self.peek() == '.' && self.is_digit(self.peek_next()) {
+			is_float = true;
 			self.advance(); // Consume the '.'
 			while self.is_digit(self.peek()) {
 				self.advance();
 			}
 		}
-		let num_token: f64 = self.source[self.start.into()..self.current.into()]
-			.parse()
-			.unwrap();
-		self.add_token(TokenType::NUMBER(num_token));
+		if is_float {
+			let float_token = self.source[self.start.into()..self.current.into()]
+				.parse::<f64>()
+				.unwrap();
+
+			self.add_token(TokenType::LITERAL(Literal::NUMBER(Number::FLOAT(
+				float_token,
+			))));
+		} else {
+			let int_token = self.source[self.start.into()..self.current.into()]
+				.parse::<i64>()
+				.unwrap();
+
+			self.add_token(TokenType::LITERAL(Literal::NUMBER(Number::INTEGER(
+				int_token,
+			))));
+		};
 	}
 
 	pub fn identifier(&mut self) {
@@ -224,7 +234,7 @@ impl Scanner {
 			"true" => self.add_token(TokenType::TRUE),
 			"var" => self.add_token(TokenType::VAR),
 			"while" => self.add_token(TokenType::WHILE),
-			_ => self.add_token(TokenType::IDENTIFIER),
+			_ => self.add_token(TokenType::LITERAL(Literal::IDENTIFIER)),
 		}
 	}
 
