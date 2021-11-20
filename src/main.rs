@@ -52,11 +52,3 @@ fn run(source: std::string::String) {
         println!("Token: {}", token.typ);
     }
 }
-
-fn error(line: u16, message: &str) {
-    report(line, "", message);
-}
-
-fn report(line: u16, error_location: &str, message: &str) {
-    println!("[line '{}'] Error {} : {}", line, error_location, message);
-}
