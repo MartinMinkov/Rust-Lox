@@ -112,7 +112,6 @@ impl Display for TokenType {
 			TokenType::VAR => write!(f, "VAR"),
 			TokenType::WHILE => write!(f, "WHILE"),
 			TokenType::EOF => write!(f, "EOF"),
-			_ => write!(f, "NOT_FOUND"),
 		}
 	}
 }

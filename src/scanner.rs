@@ -3,10 +3,11 @@ use super::tokens::{Token, TokenType};
 #[derive(Debug)]
 pub struct Scanner {
 	source: String,
-	pub tokens: Vec<Token>,
 	start: u16,
 	current: u16,
 	line: u16,
+	pub tokens: Vec<Token>,
+	pub errors: Vec<Error>,
 }
 
 impl Scanner {
@@ -17,6 +18,7 @@ impl Scanner {
 			start: 0,
 			current: 0,
 			line: 1,
+			errors: vec![],
 		}
 	}
 
@@ -111,7 +113,10 @@ impl Scanner {
 				} else if self.is_alpha(c) {
 					self.identifier();
 				} else {
-					println!("Unexpected Character");
+					self.errors.push(Error::new(
+						self.current,
+						String::from("Unexpected character."),
+					));
 				}
 			}
 		}
@@ -164,6 +169,12 @@ impl Scanner {
 				self.line = self.line + 1;
 			}
 			self.advance();
+		}
+		if self.is_at_end() {
+			self
+				.errors
+				.push(Error::new(self.line, String::from("Unterminated string.")));
+			return;
 		}
 
 		// Skip the trailing '"' from the string
@@ -227,5 +238,21 @@ impl Scanner {
 
 	pub fn is_alpha_numeric(&self, c: char) -> bool {
 		self.is_alpha(c) || self.is_digit(c)
+	}
+}
+
+#[derive(Debug)]
+pub struct Error {
+	line: u16,
+	message: String,
+}
+
+impl Error {
+	pub fn new(line: u16, message: String) -> Self {
+		Self { line, message }
+	}
+
+	pub fn report(&self) {
+		println!("[line {} ] Error {}", self.line, self.message)
 	}
 }
