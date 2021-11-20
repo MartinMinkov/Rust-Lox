@@ -97,7 +97,13 @@ impl Scanner {
 			' ' | '\r' | '\t' => (),
 			'\n' => self.line = self.line + 1,
 			'"' => self.string(),
-			_ => {}
+			c => {
+				if self.is_digit(c) {
+					self.number();
+				} else {
+					println!("Unexpected Character");
+				}
+			}
 		}
 	}
 
@@ -127,11 +133,19 @@ impl Scanner {
 		true
 	}
 
-	pub fn peek(&mut self) -> char {
+	pub fn peek(&self) -> char {
 		if self.is_at_end() {
 			return '\0';
 		}
 		self.source.chars().nth(self.current.into()).unwrap()
+	}
+
+	pub fn peek_next(&self) -> char {
+		let current: usize = (self.current + 1).into();
+		if current >= self.source.chars().count() {
+			return '\0';
+		}
+		self.source.chars().nth(current).unwrap()
 	}
 
 	pub fn string(&mut self) {
@@ -148,5 +162,25 @@ impl Scanner {
 		let end = self.current - 1;
 		let str_token = self.source[start.into()..end.into()].to_string();
 		self.add_token(TokenType::STRING(str_token))
+	}
+
+	pub fn number(&mut self) {
+		while self.is_digit(self.peek()) {
+			self.advance();
+		}
+		if self.peek() == '.' && self.is_digit(self.peek_next()) {
+			self.advance(); // Consume the '.'
+			while self.is_digit(self.peek()) {
+				self.advance();
+			}
+		}
+		let num_token: f64 = self.source[self.start.into()..self.current.into()]
+			.parse()
+			.unwrap();
+		self.add_token(TokenType::NUMBER(num_token));
+	}
+
+	pub fn is_digit(&self, c: char) -> bool {
+		c >= '0' && c <= '9'
 	}
 }

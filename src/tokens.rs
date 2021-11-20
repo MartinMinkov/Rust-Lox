@@ -28,7 +28,7 @@ pub enum TokenType {
 	// Literals.
 	IDENTIFIER,
 	STRING(String),
-	NUMBER,
+	NUMBER(f64),
 
 	// Keywords.
 	AND,
@@ -94,7 +94,7 @@ impl Display for TokenType {
 			TokenType::LESSEQUAL => write!(f, "<="),
 			TokenType::IDENTIFIER => write!(f, "IDENTIFIER"),
 			TokenType::STRING(val) => write!(f, "STRING {}", val),
-			TokenType::NUMBER => write!(f, "NUMBER"),
+			TokenType::NUMBER(val) => write!(f, "NUMBER {}", val),
 			TokenType::AND => write!(f, "AND"),
 			TokenType::CLASS => write!(f, "CLASS"),
 			TokenType::ELSE => write!(f, "ELSE"),
