@@ -1,8 +1,6 @@
-#[warn(unused_variables)]
 mod parsing;
 mod scanner;
 
-use parsing::Expression;
 use scanner::Scanner;
 use std::env;
 use std::fs;
@@ -19,7 +17,6 @@ fn main() {
     } else {
         run_prompt();
     }
-    Expression::test_expr();
 }
 
 fn run_file(path: &str) {

@@ -26,8 +26,8 @@ impl Display for Literal {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
 		match &*self {
 			Literal::IDENTIFIER => write!(f, "IDENTIFIER"),
-			Literal::STRING(val) => write!(f, "STRING {}", val),
-			Literal::NUMBER(val) => write!(f, "NUMBER {}", val),
+			Literal::STRING(val) => write!(f, "{}", val),
+			Literal::NUMBER(val) => write!(f, "{}", val),
 		}
 	}
 }
@@ -147,8 +147,8 @@ impl Display for TokenType {
 impl Display for Token {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
 		match &self.literal {
-			Some(literal) => write!(f, "{} {} {} {}", self.typ, self.lexeme, literal, self.line),
-			None => write!(f, "{} {} {}", self.typ, self.lexeme, self.line),
+			Some(literal) => write!(f, "{} {}", self.typ, literal),
+			None => write!(f, "{}", self.typ),
 		}
 	}
 }

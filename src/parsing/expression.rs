@@ -1,4 +1,4 @@
-use super::{Literal, Number, Token, TokenType};
+use super::{Literal, Token};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 pub enum Expression {
@@ -12,21 +12,11 @@ impl Display for Expression {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
 		match &*self {
 			Expression::BinaryExpression(left, operator, right) => {
-				write!(f, "BINARY EXPRESSION: {} {} {}", left, operator, right)
+				write!(f, "({} {} {})", operator, left, right)
 			}
-			Expression::Grouping(expr) => write!(f, "GROUPING EXPRESSION: {}", expr),
-			Expression::Literal(val) => write!(f, "LITERAL EXPRESSION {}", val),
-			Expression::Unary(token, right) => write!(f, "Unary EXPRESSION: {} {}", token.lexeme, right),
+			Expression::Grouping(expr) => write!(f, "(group {})", expr),
+			Expression::Literal(val) => write!(f, "{}", val),
+			Expression::Unary(token, right) => write!(f, "({} {})", token.lexeme, right),
 		}
-	}
-}
-
-impl Expression {
-	pub fn test_expr() {
-		let unary_expr = Expression::Unary(
-			Token::new(TokenType::MINUS, "-".to_string(), None, 1),
-			Box::new(Expression::Literal(Literal::NUMBER(Number::INTEGER(123)))),
-		);
-		println!("Printing AST {}", unary_expr);
 	}
 }
