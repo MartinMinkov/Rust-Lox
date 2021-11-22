@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Number {
 	FLOAT(f64),
 	INTEGER(i64),
@@ -15,11 +15,13 @@ impl Display for Number {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
 	IDENTIFIER,
 	STRING(String),
 	NUMBER(Number),
+	BOOLEAN(bool),
+	NIL,
 }
 
 impl Display for Literal {
@@ -28,11 +30,13 @@ impl Display for Literal {
 			Literal::IDENTIFIER => write!(f, "IDENTIFIER"),
 			Literal::STRING(val) => write!(f, "{}", val),
 			Literal::NUMBER(val) => write!(f, "{}", val),
+			Literal::BOOLEAN(val) => write!(f, "{}", val),
+			Literal::NIL => write!(f, "NIL"),
 		}
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
 	// Single-character tokens.
 	LEFTPAREN,
@@ -64,24 +68,21 @@ pub enum TokenType {
 	AND,
 	CLASS,
 	ELSE,
-	FALSE,
 	FUN,
 	FOR,
 	IF,
-	NIL,
 	OR,
 	PRINT,
 	RETURN,
 	SUPER,
 	THIS,
-	TRUE,
 	VAR,
 	WHILE,
 
 	EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
 	pub typ: TokenType,
 	pub lexeme: String,
@@ -126,17 +127,14 @@ impl Display for TokenType {
 			TokenType::AND => write!(f, "AND"),
 			TokenType::CLASS => write!(f, "CLASS"),
 			TokenType::ELSE => write!(f, "ELSE"),
-			TokenType::FALSE => write!(f, "FALSE"),
 			TokenType::FUN => write!(f, "FUN"),
 			TokenType::FOR => write!(f, "FOR"),
 			TokenType::IF => write!(f, "IF"),
-			TokenType::NIL => write!(f, "NIL"),
 			TokenType::OR => write!(f, "OR"),
 			TokenType::PRINT => write!(f, "PRINT"),
 			TokenType::RETURN => write!(f, "RETURN"),
 			TokenType::SUPER => write!(f, "SUPER"),
 			TokenType::THIS => write!(f, "THIS"),
-			TokenType::TRUE => write!(f, "TRUE"),
 			TokenType::VAR => write!(f, "VAR"),
 			TokenType::WHILE => write!(f, "WHILE"),
 			TokenType::EOF => write!(f, "EOF"),

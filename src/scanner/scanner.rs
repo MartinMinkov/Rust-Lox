@@ -3,8 +3,8 @@ use super::{Literal, Number, Token, TokenType};
 #[derive(Debug)]
 pub struct Scanner {
 	source: String,
-	start: u16,
-	current: u16,
+	start: usize,
+	current: usize,
 	line: u16,
 	pub tokens: Vec<Token>,
 	pub errors: Vec<Error>,
@@ -33,7 +33,7 @@ impl Scanner {
 	}
 
 	pub fn is_at_end(&self) -> bool {
-		self.current >= self.source.chars().count() as u16
+		self.current >= self.source.chars().count()
 	}
 
 	pub fn scan_token(&mut self) {
@@ -108,10 +108,9 @@ impl Scanner {
 				} else if self.is_alpha(c) {
 					self.identifier();
 				} else {
-					self.errors.push(Error::new(
-						self.current,
-						String::from("Unexpected character."),
-					));
+					self
+						.errors
+						.push(Error::new(self.line, String::from("Unexpected character.")));
 				}
 			}
 		}
@@ -221,17 +220,17 @@ impl Scanner {
 			"and" => self.add_token(TokenType::AND),
 			"class" => self.add_token(TokenType::CLASS),
 			"else" => self.add_token(TokenType::ELSE),
-			"false" => self.add_token(TokenType::FALSE),
+			"false" => self.add_token(TokenType::LITERAL(Literal::BOOLEAN(false))),
 			"for" => self.add_token(TokenType::FOR),
 			"fun" => self.add_token(TokenType::FUN),
 			"if" => self.add_token(TokenType::IF),
-			"nil" => self.add_token(TokenType::NIL),
+			"nil" => self.add_token(TokenType::LITERAL(Literal::NIL)),
 			"or" => self.add_token(TokenType::OR),
 			"print" => self.add_token(TokenType::PRINT),
 			"return" => self.add_token(TokenType::RETURN),
 			"super" => self.add_token(TokenType::SUPER),
 			"this" => self.add_token(TokenType::THIS),
-			"true" => self.add_token(TokenType::TRUE),
+			"true" => self.add_token(TokenType::LITERAL(Literal::BOOLEAN(true))),
 			"var" => self.add_token(TokenType::VAR),
 			"while" => self.add_token(TokenType::WHILE),
 			_ => self.add_token(TokenType::LITERAL(Literal::IDENTIFIER)),
