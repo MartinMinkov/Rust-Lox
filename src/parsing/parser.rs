@@ -15,7 +15,18 @@ impl Parser {
 		}
 	}
 	pub fn parse(&mut self) -> Option<Expression> {
-		self.expression()
+		self.comma()
+	}
+
+	pub fn comma(&mut self) -> Option<Expression> {
+		let mut expr = self.expression();
+		while self.match_token_types(vec![TokenType::COMMA]) {
+			let op = self.previous();
+			let right_expr = self.expression();
+			expr =
+				right_expr.map(|r| Expression::BinaryExpression(Box::new(expr.unwrap()), op, Box::new(r)));
+		}
+		expr
 	}
 
 	fn expression(&mut self) -> Option<Expression> {
@@ -28,16 +39,8 @@ impl Parser {
 		while self.match_token_types(vec![TokenType::BANGEQUAL, TokenType::EQUALEQUAL]) {
 			let op = self.previous();
 			let right_expr = self.comparison();
-			match right_expr {
-				Some(right_expr) => {
-					expr = Some(Expression::BinaryExpression(
-						Box::new(expr.unwrap()),
-						op,
-						Box::new(right_expr),
-					));
-				}
-				None => expr = None,
-			}
+			expr =
+				right_expr.map(|r| Expression::BinaryExpression(Box::new(expr.unwrap()), op, Box::new(r)));
 		}
 		expr
 	}
@@ -52,18 +55,8 @@ impl Parser {
 		]) {
 			let op = self.previous();
 			let right_expr = self.term();
-			match right_expr {
-				Some(right_expr) => {
-					expr = Some(Expression::BinaryExpression(
-						Box::new(expr.unwrap()),
-						op,
-						Box::new(right_expr),
-					));
-				}
-				None => {
-					expr = None;
-				}
-			}
+			expr =
+				right_expr.map(|r| Expression::BinaryExpression(Box::new(expr.unwrap()), op, Box::new(r)));
 		}
 		expr
 	}
@@ -73,18 +66,8 @@ impl Parser {
 		while self.match_token_types(vec![TokenType::MINUS, TokenType::PLUS]) {
 			let op = self.previous();
 			let right_expr = self.factor();
-			match right_expr {
-				Some(right_expr) => {
-					expr = Some(Expression::BinaryExpression(
-						Box::new(expr.unwrap()),
-						op,
-						Box::new(right_expr),
-					));
-				}
-				None => {
-					expr = None;
-				}
-			}
+			expr =
+				right_expr.map(|r| Expression::BinaryExpression(Box::new(expr.unwrap()), op, Box::new(r)));
 		}
 		expr
 	}
@@ -94,17 +77,8 @@ impl Parser {
 		while self.match_token_types(vec![TokenType::SLASH, TokenType::STAR]) {
 			let op = self.previous();
 			let right_expr = self.unary();
-
-			match right_expr {
-				Some(right_expr) => {
-					expr = Some(Expression::BinaryExpression(
-						Box::new(expr.unwrap()),
-						op,
-						Box::new(right_expr),
-					))
-				}
-				None => expr = None,
-			}
+			expr =
+				right_expr.map(|r| Expression::BinaryExpression(Box::new(expr.unwrap()), op, Box::new(r)));
 		}
 		expr
 	}
@@ -187,8 +161,8 @@ impl Parser {
 		if self.check(typ) {
 			return Some(self.advance());
 		}
+		self.error(self.peek(), message);
 		None
-		//self.error(self.peek(), message)
 	}
 
 	fn error(&self, token: Token, message: String) {
@@ -201,7 +175,6 @@ impl Parser {
 			if self.previous().typ == TokenType::SEMICOLON {
 				break;
 			}
-
 			match self.peek().typ {
 				TokenType::CLASS
 				| TokenType::FUN
@@ -213,7 +186,6 @@ impl Parser {
 				| TokenType::RETURN => break,
 				_ => {}
 			}
-
 			self.advance();
 		}
 	}
