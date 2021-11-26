@@ -1,40 +1,5 @@
+use super::Literal;
 use std::fmt::{Display, Formatter, Result as FmtResult};
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Number {
-	FLOAT(f64),
-	INTEGER(i64),
-}
-
-impl Display for Number {
-	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		match &*self {
-			Number::FLOAT(val) => write!(f, "{}", val),
-			Number::INTEGER(val) => write!(f, "{}", val),
-		}
-	}
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
-	IDENTIFIER,
-	STRING(String),
-	NUMBER(Number),
-	BOOLEAN(bool),
-	NIL,
-}
-
-impl Display for Literal {
-	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		match &*self {
-			Literal::IDENTIFIER => write!(f, "IDENTIFIER"),
-			Literal::STRING(val) => write!(f, "{}", val),
-			Literal::NUMBER(val) => write!(f, "{}", val),
-			Literal::BOOLEAN(val) => write!(f, "{}", val),
-			Literal::NIL => write!(f, "NIL"),
-		}
-	}
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
@@ -62,9 +27,14 @@ pub enum TokenType {
 	LESSEQUAL,
 
 	// Literals.
-	LITERAL(Literal),
+	NUMBER,
+	STRING,
+	IDENTIFIER,
 
 	// Keywords.
+	NIL,
+	FALSE,
+	TRUE,
 	AND,
 	CLASS,
 	ELSE,
@@ -80,25 +50,6 @@ pub enum TokenType {
 	WHILE,
 
 	EOF,
-}
-
-#[derive(Debug, Clone)]
-pub struct Token {
-	pub typ: TokenType,
-	pub lexeme: String,
-	literal: Option<Literal>,
-	line: u16,
-}
-
-impl Token {
-	pub fn new(typ: TokenType, lexeme: String, literal: Option<Literal>, line: u16) -> Self {
-		Self {
-			typ,
-			lexeme,
-			literal,
-			line,
-		}
-	}
 }
 
 impl Display for TokenType {
@@ -123,7 +74,6 @@ impl Display for TokenType {
 			TokenType::GREATEREQUAL => write!(f, ">="),
 			TokenType::LESS => write!(f, "<"),
 			TokenType::LESSEQUAL => write!(f, "<="),
-			TokenType::LITERAL(val) => write!(f, "{}", val),
 			TokenType::AND => write!(f, "AND"),
 			TokenType::CLASS => write!(f, "CLASS"),
 			TokenType::ELSE => write!(f, "ELSE"),
@@ -137,7 +87,32 @@ impl Display for TokenType {
 			TokenType::THIS => write!(f, "THIS"),
 			TokenType::VAR => write!(f, "VAR"),
 			TokenType::WHILE => write!(f, "WHILE"),
+			TokenType::TRUE => write!(f, "TRUE"),
+			TokenType::FALSE => write!(f, "FALSE"),
+			TokenType::IDENTIFIER => write!(f, "IDENTIFIER"),
+			TokenType::STRING => write!(f, "STRING"),
+			TokenType::NUMBER => write!(f, "NUMBER"),
+			TokenType::NIL => write!(f, "NIL"),
 			TokenType::EOF => write!(f, "EOF"),
+		}
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct Token {
+	pub typ: TokenType,
+	pub lexeme: String,
+	pub literal: Option<Literal>,
+	pub line: u16,
+}
+
+impl Token {
+	pub fn new(typ: TokenType, lexeme: String, literal: Option<Literal>, line: u16) -> Self {
+		Self {
+			typ,
+			lexeme,
+			literal,
+			line,
 		}
 	}
 }

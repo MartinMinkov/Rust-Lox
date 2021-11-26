@@ -1,3 +1,4 @@
+use super::Error;
 use super::Expression;
 use super::{Literal, Token, TokenType};
 
@@ -7,29 +8,41 @@ pub struct Parser {
 }
 
 impl Parser {
-	pub fn new(&self, tokens: Vec<Token>) -> Self {
+	pub fn new(tokens: Vec<Token>) -> Self {
 		Self {
 			tokens,
 			current_token: 0,
 		}
 	}
+	pub fn parse(&mut self) -> Option<Expression> {
+		self.expression()
+	}
 
-	pub fn expression(&mut self) -> Expression {
+	fn expression(&mut self) -> Option<Expression> {
 		self.equality()
 	}
 
-	pub fn equality(&mut self) -> Expression {
+	fn equality(&mut self) -> Option<Expression> {
 		let mut expr = self.comparison();
 
 		while self.match_token_types(vec![TokenType::BANGEQUAL, TokenType::EQUALEQUAL]) {
 			let op = self.previous();
 			let right_expr = self.comparison();
-			expr = Expression::BinaryExpression(Box::new(expr), op, Box::new(right_expr));
+			match right_expr {
+				Some(right_expr) => {
+					expr = Some(Expression::BinaryExpression(
+						Box::new(expr.unwrap()),
+						op,
+						Box::new(right_expr),
+					));
+				}
+				None => expr = None,
+			}
 		}
 		expr
 	}
 
-	pub fn comparison(&mut self) -> Expression {
+	fn comparison(&mut self) -> Option<Expression> {
 		let mut expr = self.term();
 
 		while self.match_token_types(vec![
@@ -39,63 +52,102 @@ impl Parser {
 		]) {
 			let op = self.previous();
 			let right_expr = self.term();
-			expr = Expression::BinaryExpression(Box::new(expr), op, Box::new(right_expr));
+			match right_expr {
+				Some(right_expr) => {
+					expr = Some(Expression::BinaryExpression(
+						Box::new(expr.unwrap()),
+						op,
+						Box::new(right_expr),
+					));
+				}
+				None => {
+					expr = None;
+				}
+			}
 		}
 		expr
 	}
 
-	pub fn term(&mut self) -> Expression {
+	fn term(&mut self) -> Option<Expression> {
 		let mut expr = self.factor();
 		while self.match_token_types(vec![TokenType::MINUS, TokenType::PLUS]) {
 			let op = self.previous();
 			let right_expr = self.factor();
-			expr = Expression::BinaryExpression(Box::new(expr), op, Box::new(right_expr));
+			match right_expr {
+				Some(right_expr) => {
+					expr = Some(Expression::BinaryExpression(
+						Box::new(expr.unwrap()),
+						op,
+						Box::new(right_expr),
+					));
+				}
+				None => {
+					expr = None;
+				}
+			}
 		}
 		expr
 	}
 
-	pub fn factor(&mut self) -> Expression {
+	fn factor(&mut self) -> Option<Expression> {
 		let mut expr = self.unary();
 		while self.match_token_types(vec![TokenType::SLASH, TokenType::STAR]) {
 			let op = self.previous();
 			let right_expr = self.unary();
-			expr = Expression::BinaryExpression(Box::new(expr), op, Box::new(right_expr));
+
+			match right_expr {
+				Some(right_expr) => {
+					expr = Some(Expression::BinaryExpression(
+						Box::new(expr.unwrap()),
+						op,
+						Box::new(right_expr),
+					))
+				}
+				None => expr = None,
+			}
 		}
 		expr
 	}
 
-	pub fn unary(&mut self) -> Expression {
+	fn unary(&mut self) -> Option<Expression> {
 		if self.match_token_types(vec![TokenType::BANG, TokenType::MINUS]) {
 			let op = self.previous();
 			let right_expr = self.unary();
-			return Expression::Unary(op, Box::new(right_expr));
+			match right_expr {
+				Some(right_expr) => return Some(Expression::Unary(op, Box::new(right_expr))),
+				None => return None,
+			}
 		}
 		return self.primary();
 	}
 
-	pub fn primary(&mut self) -> Expression {
-		if self.match_token_types(vec![TokenType::LITERAL(Literal::BOOLEAN(true))]) {
-			return Expression::Literal(Literal::BOOLEAN(true));
-		} else if self.match_token_types(vec![TokenType::LITERAL(Literal::BOOLEAN(false))]) {
-			return Expression::Literal(Literal::BOOLEAN(false));
-		} else if self.match_token_types(vec![TokenType::LITERAL(Literal::NIL)]) {
-			return Expression::Literal(Literal::NIL);
+	fn primary(&mut self) -> Option<Expression> {
+		if self.match_token_types(vec![TokenType::TRUE]) {
+			return Some(Expression::Literal(Literal::BOOLEAN(true)));
+		} else if self.match_token_types(vec![TokenType::FALSE]) {
+			return Some(Expression::Literal(Literal::BOOLEAN(false)));
+		} else if self.match_token_types(vec![TokenType::NIL]) {
+			return Some(Expression::Literal(Literal::NIL));
+		}
+
+		if self.match_token_types(vec![TokenType::NUMBER, TokenType::STRING]) {
+			let token = self.previous();
+			return Some(Expression::Literal(token.literal.unwrap()));
 		}
 
 		if self.match_token_types(vec![TokenType::LEFTPAREN]) {
 			let expr = self.expression();
-			self.consume(TokenType::RIGHTPAREN, "Expect ')' after expression.");
-			return Expression::Grouping(Box::new(expr));
-		} else {
-			return Expression::Literal(Literal::NIL);
+			self.consume(
+				TokenType::RIGHTPAREN,
+				String::from("Expect ')' after expression."),
+			);
+			return Some(Expression::Grouping(Box::new(expr.unwrap())));
 		}
+		Error::report_parse_error(self.peek(), String::from("Expect expression."));
+		None
 	}
 
-	pub fn consume(&self, token: TokenType, err: &str) {
-		unimplemented!();
-	}
-
-	pub fn match_token_types(&mut self, types: Vec<TokenType>) -> bool {
+	fn match_token_types(&mut self, types: Vec<TokenType>) -> bool {
 		for typ in types {
 			if self.check(typ) {
 				self.advance();
@@ -105,29 +157,64 @@ impl Parser {
 		false
 	}
 
-	pub fn check(&self, typ: TokenType) -> bool {
+	fn check(&self, typ: TokenType) -> bool {
 		if self.is_at_end() {
 			false;
 		}
 		self.peek().typ == typ
 	}
 
-	pub fn peek(&self) -> Token {
+	fn peek(&self) -> Token {
 		self.tokens.get(self.current_token).unwrap().clone()
 	}
 
-	pub fn is_at_end(&self) -> bool {
+	fn is_at_end(&self) -> bool {
 		self.peek().typ == TokenType::EOF
 	}
 
-	pub fn advance(&mut self) -> Token {
-		if self.is_at_end() {
+	fn advance(&mut self) -> Token {
+		if !self.is_at_end() {
 			self.current_token = self.current_token + 1;
 		}
 		self.previous()
 	}
 
-	pub fn previous(&self) -> Token {
+	fn previous(&self) -> Token {
 		self.tokens.get(self.current_token - 1).unwrap().clone()
+	}
+
+	fn consume(&mut self, typ: TokenType, message: String) -> Option<Token> {
+		if self.check(typ) {
+			return Some(self.advance());
+		}
+		None
+		//self.error(self.peek(), message)
+	}
+
+	fn error(&self, token: Token, message: String) {
+		Error::error(token.line, message);
+	}
+
+	fn synchronize(&mut self) {
+		self.advance();
+		while !self.is_at_end() {
+			if self.previous().typ == TokenType::SEMICOLON {
+				break;
+			}
+
+			match self.peek().typ {
+				TokenType::CLASS
+				| TokenType::FUN
+				| TokenType::VAR
+				| TokenType::FOR
+				| TokenType::IF
+				| TokenType::WHILE
+				| TokenType::PRINT
+				| TokenType::RETURN => break,
+				_ => {}
+			}
+
+			self.advance();
+		}
 	}
 }

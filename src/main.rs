@@ -1,6 +1,8 @@
+mod common;
 mod parsing;
 mod scanner;
 
+use parsing::Parser;
 use scanner::Scanner;
 use std::env;
 use std::fs;
@@ -40,15 +42,24 @@ fn run(source: std::string::String) {
     let mut scanner = Scanner::new(new_source);
     scanner.scan_tokens();
 
-    if scanner.errors.len() > 0 {
-        for err in scanner.errors {
-            err.report();
-        }
+    if scanner.had_error {
         process::exit(65);
     }
+
     println!("Returned {} of tokens", scanner.tokens.len());
 
-    for token in scanner.tokens {
-        println!("Token: {}", token.typ);
+    let mut parser = Parser::new(scanner.tokens);
+    let expr = parser.parse();
+    match expr {
+        Some(expr) => {
+            println!("parsed expression: {}", expr);
+        }
+        None => {
+            println!("failed to parse expression");
+        }
     }
+
+    // for token in scanner.tokens {
+    //     println!("Token: {}", token.typ);
+    // }
 }

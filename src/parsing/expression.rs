@@ -1,4 +1,5 @@
-use super::{Literal, Token};
+use super::Literal;
+use super::Token;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 pub enum Expression {
