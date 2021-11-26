@@ -2,7 +2,9 @@ use super::Literal;
 use super::Token;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
+#[derive(Debug, Clone)]
 pub enum Expression {
+	TernaryExpression(Box<Expression>, Token, Box<Expression>, Box<Expression>),
 	BinaryExpression(Box<Expression>, Token, Box<Expression>),
 	Grouping(Box<Expression>),
 	Literal(Literal),
@@ -12,6 +14,9 @@ pub enum Expression {
 impl Display for Expression {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
 		match &*self {
+			Expression::TernaryExpression(if_expr, operator, left, right) => {
+				write!(f, "({} {} {} {})", if_expr, operator, left, right)
+			}
 			Expression::BinaryExpression(left, operator, right) => {
 				write!(f, "({} {} {})", operator, left, right)
 			}

@@ -12,9 +12,11 @@ pub enum TokenType {
 	DOT,
 	MINUS,
 	PLUS,
+	COLON,
 	SEMICOLON,
 	SLASH,
 	STAR,
+	QUESTIONMARK,
 
 	// One or two character tokens.
 	BANG,
@@ -63,6 +65,7 @@ impl Display for TokenType {
 			TokenType::DOT => write!(f, "."),
 			TokenType::MINUS => write!(f, "-"),
 			TokenType::PLUS => write!(f, "+"),
+			TokenType::COLON => write!(f, ":"),
 			TokenType::SEMICOLON => write!(f, ";"),
 			TokenType::SLASH => write!(f, "/"),
 			TokenType::STAR => write!(f, "*"),
@@ -92,6 +95,7 @@ impl Display for TokenType {
 			TokenType::IDENTIFIER => write!(f, "IDENTIFIER"),
 			TokenType::STRING => write!(f, "STRING"),
 			TokenType::NUMBER => write!(f, "NUMBER"),
+			TokenType::QUESTIONMARK => write!(f, "?"),
 			TokenType::NIL => write!(f, "NIL"),
 			TokenType::EOF => write!(f, "EOF"),
 		}

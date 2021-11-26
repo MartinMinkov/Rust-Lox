@@ -47,8 +47,10 @@ impl Scanner {
 			'.' => self.add_token(TokenType::DOT),
 			'-' => self.add_token(TokenType::MINUS),
 			'+' => self.add_token(TokenType::PLUS),
+			':' => self.add_token(TokenType::COLON),
 			';' => self.add_token(TokenType::SEMICOLON),
 			'*' => self.add_token(TokenType::STAR),
+			'?' => self.add_token(TokenType::QUESTIONMARK),
 			'!' => {
 				let token = if self.match_token('=') {
 					TokenType::BANGEQUAL

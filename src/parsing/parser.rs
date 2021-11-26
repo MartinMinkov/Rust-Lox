@@ -15,11 +15,15 @@ impl Parser {
 		}
 	}
 	pub fn parse(&mut self) -> Option<Expression> {
+		self.expression()
+	}
+
+	fn expression(&mut self) -> Option<Expression> {
 		self.comma()
 	}
 
-	pub fn comma(&mut self) -> Option<Expression> {
-		let mut expr = self.expression();
+	fn comma(&mut self) -> Option<Expression> {
+		let mut expr = self.ternary();
 		while self.match_token_types(vec![TokenType::COMMA]) {
 			let op = self.previous();
 			let right_expr = self.expression();
@@ -29,13 +33,31 @@ impl Parser {
 		expr
 	}
 
-	fn expression(&mut self) -> Option<Expression> {
-		self.equality()
+	fn ternary(&mut self) -> Option<Expression> {
+		let mut expr = self.equality();
+		while self.match_token_types(vec![TokenType::QUESTIONMARK]) {
+			let op = self.previous();
+			let left_expr = self.expression();
+			self.consume(
+				TokenType::COLON,
+				String::from("Expect ':' after then branch of ternary expression."),
+			);
+			let right_expr = self.expression();
+			expr = match (expr, left_expr, right_expr) {
+				(Some(expr), Some(left_expr), Some(right_expr)) => Some(Expression::TernaryExpression(
+					Box::new(expr),
+					op,
+					Box::new(left_expr),
+					Box::new(right_expr),
+				)),
+				_ => None,
+			}
+		}
+		expr
 	}
 
 	fn equality(&mut self) -> Option<Expression> {
 		let mut expr = self.comparison();
-
 		while self.match_token_types(vec![TokenType::BANGEQUAL, TokenType::EQUALEQUAL]) {
 			let op = self.previous();
 			let right_expr = self.comparison();
