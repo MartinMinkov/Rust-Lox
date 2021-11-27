@@ -1,4 +1,5 @@
 mod common;
+mod interpreter;
 mod parsing;
 mod scanner;
 
@@ -49,14 +50,12 @@ fn run(source: std::string::String) {
     println!("Returned {} of tokens", scanner.tokens.len());
 
     let mut parser = Parser::new(scanner.tokens);
-    let expr = parser.parse();
-    match expr {
-        Some(expr) => {
+    let expression = parser.parse();
+    match expression {
+        Ok(expr) => {
             println!("parsed expression: {}", expr);
         }
-        None => {
-            println!("failed to parse expression");
-        }
+        Err(()) => {}
     }
 
     // for token in scanner.tokens {

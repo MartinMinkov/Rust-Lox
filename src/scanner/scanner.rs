@@ -1,4 +1,4 @@
-use super::{Error, Literal, Number, Token, TokenType};
+use super::{Error, Literal, Token, TokenType};
 
 #[derive(Debug)]
 pub struct Scanner {
@@ -28,7 +28,7 @@ impl Scanner {
 			self.scan_token();
 		}
 
-		let eof_token = Token::new(TokenType::EOF, String::from(""), None, self.line);
+		let eof_token = Token::new(TokenType::EOF, String::from("EOF"), None, self.line);
 		self.tokens.push(eof_token);
 	}
 
@@ -192,27 +192,17 @@ impl Scanner {
 		while self.is_digit(self.peek()) {
 			self.advance();
 		}
-		let mut is_float: bool = false;
 		if self.peek() == '.' && self.is_digit(self.peek_next()) {
-			is_float = true;
 			self.advance(); // Consume the '.'
 			while self.is_digit(self.peek()) {
 				self.advance();
 			}
 		}
-		if is_float {
-			let float_token = self.source[self.start.into()..self.current.into()]
-				.parse::<f64>()
-				.unwrap();
-			let float_literal = Literal::NUMBER(Number::FLOAT(float_token));
-			self.add_token_literal(TokenType::NUMBER, float_literal);
-		} else {
-			let int_token = self.source[self.start.into()..self.current.into()]
-				.parse::<i64>()
-				.unwrap();
-			let int_literal = Literal::NUMBER(Number::INTEGER(int_token));
-			self.add_token_literal(TokenType::NUMBER, int_literal);
-		};
+		let number_token = self.source[self.start.into()..self.current.into()]
+			.parse::<f64>()
+			.unwrap();
+		let float_literal = Literal::NUMBER(number_token);
+		self.add_token_literal(TokenType::NUMBER, float_literal);
 	}
 
 	fn identifier(&mut self) {
