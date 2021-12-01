@@ -2,8 +2,8 @@ pub use super::{Token, TokenType};
 
 #[derive(Debug)]
 pub struct Error {
-	message: String,
-	line: usize,
+	pub message: String,
+	pub line: usize,
 }
 
 impl Error {

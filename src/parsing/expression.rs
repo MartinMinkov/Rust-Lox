@@ -112,6 +112,14 @@ impl ExpressionNode {
 	pub fn new(line: u16, expr: Expression) -> Self {
 		Self { line, expr }
 	}
+
+	pub fn expression(&self) -> &Expression {
+		&self.expr
+	}
+
+	pub fn line(&self) -> u16 {
+		self.line
+	}
 }
 
 impl Display for ExpressionNode {

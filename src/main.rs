@@ -3,6 +3,7 @@ mod interpreter;
 mod parsing;
 mod scanner;
 
+use interpreter::evaluate;
 use parsing::Parser;
 use scanner::Scanner;
 use std::env;
@@ -54,6 +55,14 @@ fn run(source: std::string::String) {
     match expression {
         Ok(expr) => {
             println!("parsed expression: {}", expr);
+            match evaluate(expr) {
+                Ok(eval) => {
+                    println!("parsed evaluation: {}", eval);
+                }
+                Err(_) => {
+                    println!("could not evaluate");
+                }
+            }
         }
         Err(()) => {}
     }
