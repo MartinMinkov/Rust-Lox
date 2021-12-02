@@ -18,7 +18,7 @@ pub fn evaluate(expr_node: ExpressionNode) -> Result<Literal> {
 					} else {
 						Err(Error {
 							line: line.into(),
-							message: String::from("Value must be a number"),
+							message: String::from("Operand must be a number."),
 						})
 					}
 				}
@@ -28,7 +28,7 @@ pub fn evaluate(expr_node: ExpressionNode) -> Result<Literal> {
 					} else {
 						Err(Error {
 							line: line.into(),
-							message: String::from("Value must be a boolean"),
+							message: String::from("Operand must be a boolean."),
 						})
 					}
 				}
@@ -44,74 +44,87 @@ pub fn evaluate(expr_node: ExpressionNode) -> Result<Literal> {
 					(Literal::STRING(s1), Literal::STRING(s2)) => {
 						Ok(Literal::STRING(format!("{}{}", s1, s2)))
 					}
+					(Literal::NUMBER(n), Literal::STRING(s)) => Ok(Literal::STRING(format!("{}{}", n, s))),
+					(Literal::STRING(s), Literal::NUMBER(n)) => Ok(Literal::STRING(format!("{}{}", s, n))),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers or strings"),
+						message: String::from("Operands must be numbers or strings."),
 					}),
 				},
 				BinaryOperator::MINUS => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::NUMBER(n1 - n2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be numbers."),
 					}),
 				},
 				BinaryOperator::SLASH => match (left, right) {
-					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::NUMBER(n1 / n2)),
+					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => {
+						if n2 == 0.0 {
+							return Err(Error {
+								line: line.into(),
+								message: String::from("Cannot divide by zero."),
+							});
+						} else {
+							return Ok(Literal::NUMBER(n1 / n2));
+						};
+					}
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be numbers."),
 					}),
 				},
 				BinaryOperator::STAR => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::NUMBER(n1 * n2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be numbers."),
 					}),
 				},
 				BinaryOperator::GREATER => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::BOOLEAN(n1 > n2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be numbers."),
 					}),
 				},
 				BinaryOperator::GREATEREQUAL => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::BOOLEAN(n1 >= n2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be numbers."),
 					}),
 				},
 				BinaryOperator::LESS => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::BOOLEAN(n1 < n2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be numbers."),
 					}),
 				},
 				BinaryOperator::LESSEQUAL => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::BOOLEAN(n1 <= n2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be numbers."),
 					}),
 				},
 				BinaryOperator::BANGEQUAL => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::BOOLEAN(n1 != n2)),
 					(Literal::BOOLEAN(b1), Literal::BOOLEAN(b2)) => Ok(Literal::BOOLEAN(b1 != b2)),
+					(Literal::STRING(s1), Literal::STRING(s2)) => Ok(Literal::BOOLEAN(s1 != s2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be strings, numbers or booleans."),
 					}),
 				},
 				BinaryOperator::EQUALEQUAL => match (left, right) {
 					(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::BOOLEAN(n1 == n2)),
 					(Literal::BOOLEAN(b1), Literal::BOOLEAN(b2)) => Ok(Literal::BOOLEAN(b1 == b2)),
+					(Literal::STRING(s1), Literal::STRING(s2)) => Ok(Literal::BOOLEAN(s1 == s2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be strings, numbers or booleans."),
 					}),
 				},
 				BinaryOperator::COMMA => match (left, right) {
@@ -120,7 +133,7 @@ pub fn evaluate(expr_node: ExpressionNode) -> Result<Literal> {
 					(_, Literal::BOOLEAN(b2)) => Ok(Literal::BOOLEAN(b2)),
 					_ => Err(Error {
 						line: line.into(),
-						message: String::from("Values must be numbers"),
+						message: String::from("Operands must be strings, numbers or booleans."),
 					}),
 				},
 			}

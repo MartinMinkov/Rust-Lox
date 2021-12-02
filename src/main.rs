@@ -3,6 +3,7 @@ mod interpreter;
 mod parsing;
 mod scanner;
 
+use common::Error;
 use interpreter::evaluate;
 use parsing::Parser;
 use scanner::Scanner;
@@ -59,8 +60,8 @@ fn run(source: std::string::String) {
                 Ok(eval) => {
                     println!("parsed evaluation: {}", eval);
                 }
-                Err(_) => {
-                    println!("could not evaluate");
+                Err(err) => {
+                    Error::error(err.line, err.message);
                 }
             }
         }

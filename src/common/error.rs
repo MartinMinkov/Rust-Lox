@@ -3,7 +3,7 @@ pub use super::{Token, TokenType};
 #[derive(Debug)]
 pub struct Error {
 	pub message: String,
-	pub line: usize,
+	pub line: u16,
 }
 
 impl Error {
