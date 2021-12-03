@@ -1,6 +1,7 @@
 use super::Error;
 use super::{
-	BinaryOperator, Expression, ExpressionNode, OperatorTokenType, TernaryOperator, UnaryOperator,
+	BinaryOperator, Expression, ExpressionNode, OperatorTokenType, Statement, TernaryOperator,
+	UnaryOperator,
 };
 use super::{Literal, Token, TokenType};
 
@@ -35,14 +36,43 @@ impl Parser {
 			current_token: 0,
 		}
 	}
-	pub fn parse(&mut self) -> Result<ExpressionNode, ()> {
-		match self.expression() {
-			Ok(expr) => return Ok(expr),
-			Err(e) => {
-				e.print();
-				Err(())
+	pub fn parse(&mut self) -> Vec<Statement> {
+		let mut statements: Vec<Statement> = vec![];
+		while !self.is_at_end() {
+			match self.statement() {
+				Ok(expr) => statements.push(expr),
+				Err(e) => {
+					e.print();
+				}
 			}
 		}
+		statements
+	}
+
+	fn statement(&mut self) -> ParseResult<Statement> {
+		if self.peek().typ == TokenType::PRINT {
+			self.advance();
+			return self.print_statement();
+		}
+		self.expression_statement()
+	}
+
+	fn print_statement(&mut self) -> ParseResult<Statement> {
+		let expr = self.expression()?;
+		self.consume(
+			TokenType::SEMICOLON,
+			String::from("Expect ';' after value."),
+		);
+		Ok(Statement::PrintStatement(Box::new(expr)))
+	}
+
+	fn expression_statement(&mut self) -> ParseResult<Statement> {
+		let expr = self.expression()?;
+		self.consume(
+			TokenType::SEMICOLON,
+			String::from("Expect ';' after expression."),
+		);
+		Ok(Statement::ExpressionStatement(Box::new(expr)))
 	}
 
 	fn expression(&mut self) -> ParseResult<ExpressionNode> {

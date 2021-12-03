@@ -129,6 +129,25 @@ impl Display for ExpressionNode {
 }
 
 #[derive(Debug, Clone)]
+pub enum Statement {
+	PrintStatement(Box<ExpressionNode>),
+	ExpressionStatement(Box<ExpressionNode>),
+}
+
+impl Display for Statement {
+	fn fmt(&self, f: &mut Formatter) -> FmtResult {
+		match &*self {
+			Statement::PrintStatement(expr) => {
+				write!(f, "{}", expr)
+			}
+			Statement::ExpressionStatement(expr) => {
+				write!(f, "{}", expr)
+			}
+		}
+	}
+}
+
+#[derive(Debug, Clone)]
 pub enum Expression {
 	TernaryExpression(
 		Box<ExpressionNode>,

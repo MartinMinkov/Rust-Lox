@@ -8,6 +8,12 @@ Find and support the book here:
 # Grammar
 
 ```
+program			-> statement* EOF;
+statement 		-> exprStmt | printStmt;
+
+exprStmt		-> expression ";";
+printStmt		-> "print" expression ";";
+
 expression		-> comma;
 comma 			-> expression ( "," expression )*;
 ternary 		-> equality ( "?" expression ":" ternary )?

@@ -1,7 +1,19 @@
 use super::Error;
 use super::Literal;
 use super::Result;
-use super::{BinaryOperator, Expression, ExpressionNode, TernaryOperator, UnaryOperator};
+use super::{
+	BinaryOperator, Expression, ExpressionNode, Statement, TernaryOperator, UnaryOperator,
+};
+
+pub fn evaluate_statement(statement: Statement) -> Result<Literal> {
+	match statement {
+		Statement::PrintStatement(print_expr) => evaluate(*print_expr).map(|expr| {
+			println!("{}", expr);
+			expr
+		}),
+		Statement::ExpressionStatement(expr) => evaluate(*expr),
+	}
+}
 
 pub fn evaluate(expr_node: ExpressionNode) -> Result<Literal> {
 	let expr = expr_node.expression().clone();

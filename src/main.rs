@@ -4,7 +4,7 @@ mod parsing;
 mod scanner;
 
 use common::Error;
-use interpreter::evaluate;
+use interpreter::evaluate_statement;
 use parsing::Parser;
 use scanner::Scanner;
 use std::env;
@@ -49,26 +49,14 @@ fn run(source: std::string::String) {
         process::exit(65);
     }
 
-    println!("Returned {} of tokens", scanner.tokens.len());
-
     let mut parser = Parser::new(scanner.tokens);
-    let expression = parser.parse();
-    match expression {
-        Ok(expr) => {
-            println!("parsed expression: {}", expr);
-            match evaluate(expr) {
-                Ok(eval) => {
-                    println!("parsed evaluation: {}", eval);
-                }
-                Err(err) => {
-                    Error::error(err.line, err.message);
-                }
+    let statements = parser.parse();
+    for statement in statements {
+        match evaluate_statement(statement) {
+            Ok(_) => {}
+            Err(err) => {
+                Error::error(err.line, err.message);
             }
         }
-        Err(()) => {}
     }
-
-    // for token in scanner.tokens {
-    //     println!("Token: {}", token.typ);
-    // }
 }
