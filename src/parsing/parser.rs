@@ -267,8 +267,8 @@ impl Parser {
 				));
 			}
 			TokenType::LEFTPAREN => {
-				let expr = self.expression()?;
 				self.advance();
+				let expr = self.expression()?;
 				self.consume(
 					TokenType::RIGHTPAREN,
 					String::from("Expect ')' after expression."),
