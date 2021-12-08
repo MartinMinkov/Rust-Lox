@@ -1,0 +1,4 @@
+
+print true ? "hello" : "world";
+print false ? "hello" : "world";
+print 1 + 1 == 2 ? "hello" : "world";

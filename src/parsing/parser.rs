@@ -10,12 +10,14 @@ type ParseResult<T> = Result<T, ParseError>;
 #[derive(Debug)]
 pub enum ParseError {
 	MissingExpr(Token),
+	MissingVariableName(Token),
 }
 
 impl ParseError {
 	fn print(&self) {
 		let (token, message) = match self {
 			ParseError::MissingExpr(token) => (token, String::from("Expect expression")),
+			ParseError::MissingVariableName(token) => (token, String::from("Expect variable name")),
 		};
 		eprintln!(
 			"[line {}] Error at {}: {}.",
@@ -39,7 +41,7 @@ impl Parser {
 	pub fn parse(&mut self) -> Vec<Statement> {
 		let mut statements: Vec<Statement> = vec![];
 		while !self.is_at_end() {
-			match self.statement() {
+			match self.declaration() {
 				Ok(expr) => statements.push(expr),
 				Err(e) => {
 					e.print();
@@ -47,6 +49,39 @@ impl Parser {
 			}
 		}
 		statements
+	}
+
+	fn declaration(&mut self) -> ParseResult<Statement> {
+		let statement = if self.peek().typ == TokenType::VAR {
+			self.advance();
+			return self.var_declaration();
+		} else {
+			self.statement()
+		};
+		if statement.is_err() {
+			self.synchronize();
+		}
+		statement
+	}
+
+	fn var_declaration(&mut self) -> ParseResult<Statement> {
+		let var_name = self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."));
+		let mut init = None;
+		if self.peek().typ == TokenType::EQUAL {
+			self.advance();
+			init = Some(self.expression()?);
+		}
+		self.consume(
+			TokenType::SEMICOLON,
+			String::from("Expect ';' after variable declaration."),
+		);
+		match (var_name, init) {
+			(Some(name), Some(expr)) => {
+				return Ok(Statement::VariableDeclaration(name, Some(Box::new(expr))))
+			}
+			(Some(name), None) => return Ok(Statement::VariableDeclaration(name, None)),
+			(None, _) => return Err(ParseError::MissingVariableName(self.previous())),
+		}
 	}
 
 	fn statement(&mut self) -> ParseResult<Statement> {
@@ -199,37 +234,41 @@ impl Parser {
 	}
 
 	fn primary(&mut self) -> ParseResult<ExpressionNode> {
-		let current_token = self.advance();
+		let current_token = self.peek();
 		let current_line = self.current_line();
 
 		match current_token.typ {
 			TokenType::TRUE => {
+				self.advance();
 				return Ok(ExpressionNode::new(
 					current_line,
 					Expression::Literal(Literal::BOOLEAN(true)),
 				));
 			}
 			TokenType::FALSE => {
+				self.advance();
 				return Ok(ExpressionNode::new(
 					current_line,
 					Expression::Literal(Literal::BOOLEAN(false)),
 				));
 			}
 			TokenType::NIL => {
+				self.advance();
 				return Ok(ExpressionNode::new(
 					current_line,
 					Expression::Literal(Literal::NIL),
 				));
 			}
 			TokenType::NUMBER | TokenType::STRING => {
-				let token = self.previous();
+				self.advance();
 				return Ok(ExpressionNode::new(
 					current_line,
-					Expression::Literal(token.literal.unwrap()),
+					Expression::Literal(current_token.literal.unwrap()),
 				));
 			}
 			TokenType::LEFTPAREN => {
 				let expr = self.expression()?;
+				self.advance();
 				self.consume(
 					TokenType::RIGHTPAREN,
 					String::from("Expect ')' after expression."),
@@ -239,7 +278,16 @@ impl Parser {
 					Expression::Grouping(Box::new(expr)),
 				));
 			}
-			_ => return Err(ParseError::MissingExpr(current_token)),
+			TokenType::IDENTIFIER => {
+				self.advance();
+				return Ok(ExpressionNode::new(
+					current_line,
+					Expression::Variable(current_token),
+				));
+			}
+			_ => {
+				return Err(ParseError::MissingExpr(current_token));
+			}
 		};
 	}
 

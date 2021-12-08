@@ -4,7 +4,7 @@ mod parsing;
 mod scanner;
 
 use common::Error;
-use interpreter::evaluate_statement;
+use interpreter::Interpreter;
 use parsing::Parser;
 use scanner::Scanner;
 use std::env;
@@ -51,8 +51,9 @@ fn run(source: std::string::String) {
 
     let mut parser = Parser::new(scanner.tokens);
     let statements = parser.parse();
+    let mut interpreter = Interpreter::new();
     for statement in statements {
-        match evaluate_statement(statement) {
+        match interpreter.evaluate_statement(statement) {
             Ok(_) => {}
             Err(err) => {
                 Error::error(err.line, err.message);

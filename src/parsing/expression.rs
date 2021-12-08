@@ -1,9 +1,91 @@
 use super::Literal;
-use super::TokenType;
+use super::{Token, TokenType};
 use std::fmt::{Display, Formatter, Result as FmtResult};
+
+#[derive(Debug, Clone)]
+pub struct ExpressionNode {
+	line: u16,
+	expr: Expression,
+}
+
+impl ExpressionNode {
+	pub fn new(line: u16, expr: Expression) -> Self {
+		Self { line, expr }
+	}
+
+	pub fn expression(&self) -> &Expression {
+		&self.expr
+	}
+
+	pub fn line(&self) -> u16 {
+		self.line
+	}
+}
+
+impl Display for ExpressionNode {
+	fn fmt(&self, f: &mut Formatter) -> FmtResult {
+		write!(f, "{}", self.expr)
+	}
+}
 
 pub trait OperatorTokenType {
 	fn token_type(&self) -> TokenType;
+}
+
+#[derive(Debug, Clone)]
+pub enum Statement {
+	PrintStatement(Box<ExpressionNode>),
+	ExpressionStatement(Box<ExpressionNode>),
+	VariableDeclaration(Token, Option<Box<ExpressionNode>>),
+}
+
+impl Display for Statement {
+	fn fmt(&self, f: &mut Formatter) -> FmtResult {
+		match &*self {
+			Statement::PrintStatement(expr) => {
+				write!(f, "{}", expr)
+			}
+			Statement::ExpressionStatement(expr) => {
+				write!(f, "{}", expr)
+			}
+			Statement::VariableDeclaration(name, expr) => match expr {
+				Some(expr) => write!(f, "{} {}", name.lexeme, expr),
+				None => write!(f, "{}", name.lexeme),
+			},
+		}
+	}
+}
+
+#[derive(Debug, Clone)]
+pub enum Expression {
+	TernaryExpression(
+		Box<ExpressionNode>,
+		TernaryOperator,
+		Box<ExpressionNode>,
+		Box<ExpressionNode>,
+	),
+	BinaryExpression(Box<ExpressionNode>, BinaryOperator, Box<ExpressionNode>),
+	Grouping(Box<ExpressionNode>),
+	Literal(Literal),
+	Unary(UnaryOperator, Box<ExpressionNode>),
+	Variable(Token),
+}
+
+impl Display for Expression {
+	fn fmt(&self, f: &mut Formatter) -> FmtResult {
+		match &*self {
+			Expression::TernaryExpression(if_expr, operator, left, right) => {
+				write!(f, "({} {} ({} {}))", if_expr, operator, left, right)
+			}
+			Expression::BinaryExpression(left, operator, right) => {
+				write!(f, "({} {} {})", operator, left, right)
+			}
+			Expression::Grouping(expr) => write!(f, "(group {})", expr),
+			Expression::Literal(val) => write!(f, "{}", val),
+			Expression::Unary(operator, right) => write!(f, "({} {})", operator, right),
+			Expression::Variable(var) => write!(f, "{}", var.lexeme),
+		}
+	}
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -98,81 +180,6 @@ impl Display for TernaryOperator {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
 		match self {
 			TernaryOperator::QUESTIONMARK => write!(f, "?"),
-		}
-	}
-}
-
-#[derive(Debug, Clone)]
-pub struct ExpressionNode {
-	line: u16,
-	expr: Expression,
-}
-
-impl ExpressionNode {
-	pub fn new(line: u16, expr: Expression) -> Self {
-		Self { line, expr }
-	}
-
-	pub fn expression(&self) -> &Expression {
-		&self.expr
-	}
-
-	pub fn line(&self) -> u16 {
-		self.line
-	}
-}
-
-impl Display for ExpressionNode {
-	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		write!(f, "{}", self.expr)
-	}
-}
-
-#[derive(Debug, Clone)]
-pub enum Statement {
-	PrintStatement(Box<ExpressionNode>),
-	ExpressionStatement(Box<ExpressionNode>),
-}
-
-impl Display for Statement {
-	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		match &*self {
-			Statement::PrintStatement(expr) => {
-				write!(f, "{}", expr)
-			}
-			Statement::ExpressionStatement(expr) => {
-				write!(f, "{}", expr)
-			}
-		}
-	}
-}
-
-#[derive(Debug, Clone)]
-pub enum Expression {
-	TernaryExpression(
-		Box<ExpressionNode>,
-		TernaryOperator,
-		Box<ExpressionNode>,
-		Box<ExpressionNode>,
-	),
-	BinaryExpression(Box<ExpressionNode>, BinaryOperator, Box<ExpressionNode>),
-	Grouping(Box<ExpressionNode>),
-	Literal(Literal),
-	Unary(UnaryOperator, Box<ExpressionNode>),
-}
-
-impl Display for Expression {
-	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		match &*self {
-			Expression::TernaryExpression(if_expr, operator, left, right) => {
-				write!(f, "({} {} ({} {}))", if_expr, operator, left, right)
-			}
-			Expression::BinaryExpression(left, operator, right) => {
-				write!(f, "({} {} {})", operator, left, right)
-			}
-			Expression::Grouping(expr) => write!(f, "(group {})", expr),
-			Expression::Literal(val) => write!(f, "{}", val),
-			Expression::Unary(operator, right) => write!(f, "({} {})", operator, right),
 		}
 	}
 }

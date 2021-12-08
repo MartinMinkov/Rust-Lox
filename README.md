@@ -8,21 +8,26 @@ Find and support the book here:
 # Grammar
 
 ```
-program			-> statement* EOF;
-statement 		-> exprStmt | printStmt;
+program			-> declaration* EOF ;
 
-exprStmt		-> expression ";";
-printStmt		-> "print" expression ";";
+declaration		-> varDecl | statement ;
 
-expression		-> comma;
-comma 			-> expression ( "," expression )*;
+varDecl			-> "var" IDENTIFIER ( "=" expression )? ";" ;
+
+statement 		-> exprStmt | printStmt ;
+
+exprStmt		-> expression ";" ;
+printStmt		-> "print" expression ";" ;
+
+expression		-> comma ;
+comma 			-> expression ( "," expression )* ;
 ternary 		-> equality ( "?" expression ":" ternary )?
-equality		-> comparison ( ( "!=" | "==" ) comparison )*;
-comparison		-> term ( ( ">" | ">=" | "<" | ">=" ) term)*;
-term			-> factor ( ( "-" | "+" ) factor )*;
-factor			-> unary ( ( "/" | "*" ) unary )*;
-unary 			-> ( ("!" | "-" ) unary | primary );
-primary 		-> ( NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" );
+equality		-> comparison ( ( "!=" | "==" ) comparison )* ;
+comparison		-> term ( ( ">" | ">=" | "<" | ">=" ) term)* ;
+term			-> factor ( ( "-" | "+" ) factor )* ;
+factor			-> unary ( ( "/" | "*" ) unary )* ;
+unary 			-> ( ("!" | "-" ) unary | primary ) ;
+primary 		-> ( NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ) ;
 ```
 
 # Added Features from Challenges
