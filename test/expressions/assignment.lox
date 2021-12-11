@@ -1,0 +1,3 @@
+var a = "before";
+a = "after";
+print a;
