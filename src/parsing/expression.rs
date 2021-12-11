@@ -69,6 +69,7 @@ pub enum Expression {
 	Literal(Literal),
 	Unary(UnaryOperator, Box<ExpressionNode>),
 	Variable(Token),
+	Assignment(Token, Box<ExpressionNode>),
 }
 
 impl Display for Expression {
@@ -84,6 +85,7 @@ impl Display for Expression {
 			Expression::Literal(val) => write!(f, "{}", val),
 			Expression::Unary(operator, right) => write!(f, "({} {})", operator, right),
 			Expression::Variable(var) => write!(f, "{}", var.lexeme),
+			Expression::Assignment(var, expr) => write!(f, "{} {}", var.lexeme, expr),
 		}
 	}
 }

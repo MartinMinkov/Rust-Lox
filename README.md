@@ -19,8 +19,9 @@ statement 		-> exprStmt | printStmt ;
 exprStmt		-> expression ";" ;
 printStmt		-> "print" expression ";" ;
 
-expression		-> comma ;
-comma 			-> expression ( "," expression )* ;
+expression		-> comma;
+comma 			-> assigment ( "," assigment )* ;
+assigment			-> "IDENTIFIER" "=" assigment | equality | ternary ;
 ternary 		-> equality ( "?" expression ":" ternary )?
 equality		-> comparison ( ( "!=" | "==" ) comparison )* ;
 comparison		-> term ( ( ">" | ">=" | "<" | ">=" ) term)* ;

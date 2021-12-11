@@ -20,6 +20,11 @@ impl Environment {
 		self.values.get(&name).map(|variable| variable.clone())
 	}
 
+	pub fn assign(&mut self, name: String, value: Literal) -> Option<Literal> {
+		self.values.insert(name, value)
+	}
+
+	#[allow(dead_code)]
 	pub fn print(&self) {
 		for (key, value) in &self.values {
 			println!("{} = {}", key, value);

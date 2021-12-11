@@ -115,7 +115,7 @@ impl Parser {
 	}
 
 	fn comma(&mut self) -> ParseResult<ExpressionNode> {
-		let expr = self.ternary()?;
+		let expr = self.assignment()?;
 
 		if let Some(binary_op) = self.match_operator_type(vec![BinaryOperator::COMMA]) {
 			let right_expr = self.expression()?;
@@ -124,6 +124,26 @@ impl Parser {
 				self.current_line(),
 				Expression::BinaryExpression(Box::new(expr), binary_op, Box::new(right_expr)),
 			));
+		}
+		Ok(expr)
+	}
+
+	fn assignment(&mut self) -> ParseResult<ExpressionNode> {
+		let expr = self.ternary()?;
+
+		if self.peek().typ == TokenType::EQUAL {
+			let token = self.advance();
+			let value_expr = self.assignment()?;
+
+			match expr.expression() {
+				Expression::Variable(name) => {
+					return Ok(ExpressionNode::new(
+						self.current_line(),
+						Expression::Assignment(name.clone(), Box::new(value_expr)),
+					))
+				}
+				_ => return Err(ParseError::MissingExpr(token)),
+			}
 		}
 		Ok(expr)
 	}

@@ -24,8 +24,7 @@ impl Interpreter {
 				Ok(())
 			}
 			Statement::ExpressionStatement(expr) => {
-				let expr = self.evaluate(*expr)?;
-				println!("{}", expr);
+				let _expr = self.evaluate(*expr)?;
 				Ok(())
 			}
 			Statement::VariableDeclaration(token, init_expr) => match init_expr {
@@ -42,7 +41,7 @@ impl Interpreter {
 		}
 	}
 
-	pub fn evaluate(&self, expr_node: ExpressionNode) -> Result<Literal> {
+	pub fn evaluate(&mut self, expr_node: ExpressionNode) -> Result<Literal> {
 		let expr = expr_node.expression().clone();
 		match expr {
 			Expression::Literal(val) => Ok(val),
@@ -72,6 +71,18 @@ impl Interpreter {
 						}
 					}
 				}
+			}
+			Expression::Assignment(variable, assignment_expr) => {
+				let line = assignment_expr.line();
+				let value = self.evaluate(*assignment_expr)?;
+				let variable_name = variable.lexeme.clone();
+				self
+					.environment
+					.assign(variable.lexeme, value)
+					.ok_or_else(|| Error {
+						line: line.into(),
+						message: String::from(format!("Undefined {} variable.", variable_name)),
+					})
 			}
 			Expression::BinaryExpression(left_expr, bin_op, right_expr) => {
 				let line = left_expr.line();
