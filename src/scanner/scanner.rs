@@ -118,14 +118,14 @@ impl Scanner {
 	}
 
 	fn advance(&mut self) -> char {
-		let c = self.source.chars().nth(self.current.into());
+		let c = self.source.chars().nth(self.current);
 		self.current = self.current + 1;
 		c.unwrap()
 	}
 
 	fn add_token(&mut self, token: TokenType) {
-		let start: usize = self.start;
-		let current: usize = self.current;
+		let start = self.start;
+		let current = self.current;
 		let text = &self.source.as_str()[start..current];
 		self
 			.tokens
@@ -133,8 +133,8 @@ impl Scanner {
 	}
 
 	fn add_token_literal(&mut self, token: TokenType, literal: Literal) {
-		let start: usize = self.start;
-		let current: usize = self.current;
+		let start = self.start;
+		let current = self.current;
 		let text = &self.source.as_str()[start..current];
 		self
 			.tokens
@@ -145,7 +145,7 @@ impl Scanner {
 		if self.is_at_end() {
 			return false;
 		}
-		if self.source.chars().nth(self.current.into()).unwrap() != expected {
+		if self.source.chars().nth(self.current).unwrap() != expected {
 			return false;
 		}
 		self.current = self.current + 1;
@@ -156,11 +156,11 @@ impl Scanner {
 		if self.is_at_end() {
 			return '\0';
 		}
-		self.source.chars().nth(self.current.into()).unwrap()
+		self.source.chars().nth(self.current).unwrap()
 	}
 
 	fn peek_next(&self) -> char {
-		let current: usize = (self.current + 1).into();
+		let current = self.current + 1;
 		if current >= self.source.chars().count() {
 			return '\0';
 		}
@@ -184,7 +184,7 @@ impl Scanner {
 		self.advance();
 		let start = self.start + 1;
 		let end = self.current - 1;
-		let string_literal = Literal::STRING(self.source[start.into()..end.into()].to_string());
+		let string_literal = Literal::STRING(self.source[start..end].to_string());
 		self.add_token_literal(TokenType::STRING, string_literal)
 	}
 
@@ -198,7 +198,7 @@ impl Scanner {
 				self.advance();
 			}
 		}
-		let number_token = self.source[self.start.into()..self.current.into()]
+		let number_token = self.source[self.start..self.current]
 			.parse::<f64>()
 			.unwrap();
 		let float_literal = Literal::NUMBER(number_token);
@@ -210,7 +210,7 @@ impl Scanner {
 			self.advance();
 		}
 
-		let identifier_token = self.source[self.start.into()..self.current.into()].to_string();
+		let identifier_token = self.source[self.start..self.current].to_string();
 		match &identifier_token[..] {
 			"and" => self.add_token(TokenType::AND),
 			"class" => self.add_token(TokenType::CLASS),

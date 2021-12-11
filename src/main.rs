@@ -41,8 +41,7 @@ fn run_prompt() {
 }
 
 fn run(source: std::string::String) {
-    let new_source = source.clone();
-    let mut scanner = Scanner::new(new_source);
+    let mut scanner = Scanner::new(source);
     scanner.scan_tokens();
 
     if scanner.had_error {
