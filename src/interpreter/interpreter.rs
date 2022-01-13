@@ -5,6 +5,7 @@ use super::Result;
 use super::{
 	BinaryOperator, Expression, ExpressionNode, Statement, TernaryOperator, UnaryOperator,
 };
+use std::mem;
 
 pub struct Interpreter {
 	environment: Environment,
@@ -16,6 +17,7 @@ impl Interpreter {
 			environment: Environment::new(),
 		}
 	}
+
 	pub fn evaluate_statement(&mut self, statement: Statement) -> Result<()> {
 		match statement {
 			Statement::PrintStatement(print_expr) => {
@@ -38,7 +40,20 @@ impl Interpreter {
 					Ok(())
 				}
 			},
+			Statement::BlockStatement(statements) => {
+				let current_env = self.environment.clone();
+				self.execute_block(statements, Environment::new_with_environment(current_env));
+				Ok(())
+			}
 		}
+	}
+
+	fn execute_block(&mut self, statements: Vec<Statement>, environment: Environment) {
+		let previous = mem::replace(&mut self.environment, environment);
+		for statement in statements {
+			self.evaluate_statement(statement);
+		}
+		mem::replace(&mut self.environment, previous);
 	}
 
 	pub fn evaluate(&mut self, expr_node: ExpressionNode) -> Result<Literal> {

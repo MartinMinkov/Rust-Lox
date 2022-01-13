@@ -37,23 +37,7 @@ pub enum Statement {
 	PrintStatement(Box<ExpressionNode>),
 	ExpressionStatement(Box<ExpressionNode>),
 	VariableDeclaration(Token, Option<Box<ExpressionNode>>),
-}
-
-impl Display for Statement {
-	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		match &*self {
-			Statement::PrintStatement(expr) => {
-				write!(f, "{}", expr)
-			}
-			Statement::ExpressionStatement(expr) => {
-				write!(f, "{}", expr)
-			}
-			Statement::VariableDeclaration(name, expr) => match expr {
-				Some(expr) => write!(f, "{} {}", name.lexeme, expr),
-				None => write!(f, "{}", name.lexeme),
-			},
-		}
-	}
+	BlockStatement(Vec<Statement>),
 }
 
 #[derive(Debug, Clone)]

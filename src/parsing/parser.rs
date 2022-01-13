@@ -88,6 +88,9 @@ impl Parser {
 		if self.peek().typ == TokenType::PRINT {
 			self.advance();
 			return self.print_statement();
+		} else if self.peek().typ == TokenType::LEFTBRACE {
+			self.advance();
+			return Ok(Statement::BlockStatement(self.block()));
 		}
 		self.expression_statement()
 	}
@@ -108,6 +111,20 @@ impl Parser {
 			String::from("Expect ';' after expression."),
 		);
 		Ok(Statement::ExpressionStatement(Box::new(expr)))
+	}
+
+	fn block(&mut self) -> Vec<Statement> {
+		let mut statements: Vec<Statement> = vec![];
+		while self.peek().typ != TokenType::RIGHTBRACE && !self.is_at_end() {
+			self
+				.declaration()
+				.map(|statement| statements.push(statement));
+		}
+		self.consume(
+			TokenType::RIGHTBRACE,
+			String::from("Expect '}' after block."),
+		);
+		statements
 	}
 
 	fn expression(&mut self) -> ParseResult<ExpressionNode> {
