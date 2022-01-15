@@ -85,14 +85,41 @@ impl Parser {
 	}
 
 	fn statement(&mut self) -> ParseResult<Statement> {
-		if self.peek().typ == TokenType::PRINT {
+		let current_token = self.peek();
+		if current_token.typ == TokenType::IF {
+			self.advance();
+			return self.if_statement();
+		} else if current_token.typ == TokenType::PRINT {
 			self.advance();
 			return self.print_statement();
-		} else if self.peek().typ == TokenType::LEFTBRACE {
+		} else if current_token.typ == TokenType::LEFTBRACE {
 			self.advance();
 			return Ok(Statement::BlockStatement(self.block()));
 		}
 		self.expression_statement()
+	}
+
+	fn if_statement(&mut self) -> ParseResult<Statement> {
+		self.consume(TokenType::LEFTPAREN, String::from("Expect '(' after if."));
+		let condition = self.expression()?;
+		self.consume(
+			TokenType::RIGHTPAREN,
+			String::from("Expect ')' after if condition."),
+		);
+
+		let then_branch = self.statement()?;
+		let mut else_branch = None;
+		self.advance();
+		if self.peek().typ == TokenType::ELSE {
+			let else_statement = self.statement()?;
+			else_branch = Some(Box::new(else_statement))
+		}
+
+		Ok(Statement::IfStatement(
+			Box::new(condition),
+			Box::new(then_branch),
+			else_branch,
+		))
 	}
 
 	fn print_statement(&mut self) -> ParseResult<Statement> {

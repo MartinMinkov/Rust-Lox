@@ -1,0 +1,7 @@
+var cond = false;
+
+if (cond) {
+	print "if statement";
+} else {
+	print "else statement";
+}

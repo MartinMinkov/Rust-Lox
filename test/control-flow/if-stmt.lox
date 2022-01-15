@@ -1,0 +1,5 @@
+var cond = true;
+
+if (cond) {
+	print "if statement";
+}

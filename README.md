@@ -14,12 +14,13 @@ declaration		-> varDecl | statement ;
 
 varDecl			-> "var" IDENTIFIER ( "=" expression )? ";" ;
 
-statement 		-> exprStmt | printStmt | block ;
+statement 		-> exprStmt | ifStmt | printStmt | block ;
 
 block				-> "{" declaration* "}" ;
 
 exprStmt		-> expression ";" ;
 printStmt		-> "print" expression ";" ;
+ifStmt			-> "if" "(" expression ")" statement ("else" statement )? ;
 
 expression		-> comma;
 comma 			-> assigment ( "," assigment )* ;

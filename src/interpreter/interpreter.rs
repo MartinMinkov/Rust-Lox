@@ -18,15 +18,29 @@ impl Interpreter {
 		}
 	}
 
-	pub fn evaluate_statement(&mut self, statement: Statement) -> Result<()> {
+	pub fn evaluate_statement(&mut self, statement: Statement, run_in_repl: bool) -> Result<()> {
 		match statement {
 			Statement::PrintStatement(print_expr) => {
-				let expr = self.evaluate(*print_expr)?;
-				println!("{}", expr);
+				println!("{}", self.evaluate(*print_expr)?);
+				Ok(())
+			}
+			Statement::IfStatement(condition, then_branch, else_branch) => {
+				let condition_expr = self.evaluate(*condition)?;
+				match condition_expr {
+					Literal::BOOLEAN(true) => {
+						self.evaluate_statement(*then_branch, run_in_repl)?;
+					}
+					Literal::BOOLEAN(false) => {
+						else_branch
+							.and_then(|else_expr| Some(self.evaluate_statement(*else_expr, run_in_repl)));
+					}
+					_ => {}
+				}
+
 				Ok(())
 			}
 			Statement::ExpressionStatement(expr) => {
-				let _expr = self.evaluate(*expr)?;
+				self.evaluate(*expr)?;
 				Ok(())
 			}
 			Statement::VariableDeclaration(token, init_expr) => match init_expr {
@@ -51,9 +65,9 @@ impl Interpreter {
 	fn execute_block(&mut self, statements: Vec<Statement>, environment: Environment) {
 		let previous = mem::replace(&mut self.environment, environment);
 		for statement in statements {
-			self.evaluate_statement(statement);
+			self.evaluate_statement(statement, false);
 		}
-		mem::replace(&mut self.environment, previous);
+		self.environment = previous;
 	}
 
 	pub fn evaluate(&mut self, expr_node: ExpressionNode) -> Result<Literal> {

@@ -35,6 +35,7 @@ pub trait OperatorTokenType {
 #[derive(Debug, Clone)]
 pub enum Statement {
 	PrintStatement(Box<ExpressionNode>),
+	IfStatement(Box<ExpressionNode>, Box<Statement>, Option<Box<Statement>>),
 	ExpressionStatement(Box<ExpressionNode>),
 	VariableDeclaration(Token, Option<Box<ExpressionNode>>),
 	BlockStatement(Vec<Statement>),

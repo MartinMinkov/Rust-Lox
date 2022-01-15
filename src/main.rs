@@ -26,7 +26,7 @@ fn main() {
 
 fn run_file(path: &str) {
     let contents = fs::read_to_string(path).expect("Something went wrong reading the file");
-    run(contents);
+    run(contents, false);
 }
 
 fn run_prompt() {
@@ -34,13 +34,13 @@ fn run_prompt() {
         println!("> ");
         let mut line = String::new();
         match io::stdin().read_line(&mut line) {
-            Ok(_) => run(line),
+            Ok(_) => run(line, true),
             Err(_) => break,
         }
     }
 }
 
-fn run(source: std::string::String) {
+fn run(source: std::string::String, run_in_repl: bool) {
     let mut scanner = Scanner::new(source);
     scanner.scan_tokens();
 
@@ -52,8 +52,8 @@ fn run(source: std::string::String) {
     let statements = parser.parse();
     let mut interpreter = Interpreter::new();
     for statement in statements {
-        match interpreter.evaluate_statement(statement) {
-            Ok(_) => {}
+        match interpreter.evaluate_statement(statement, run_in_repl) {
+            Ok(()) => {}
             Err(err) => {
                 Error::error(err.line, err.message);
             }
