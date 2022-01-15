@@ -2,9 +2,7 @@ use super::Environment;
 use super::Error;
 use super::Literal;
 use super::Result;
-use super::{
-	BinaryOperator, Expression, ExpressionNode, Statement, TernaryOperator, UnaryOperator,
-};
+use super::*;
 use std::mem;
 
 pub struct Interpreter {
@@ -65,7 +63,7 @@ impl Interpreter {
 	fn execute_block(&mut self, statements: Vec<Statement>, environment: Environment) {
 		let previous = mem::replace(&mut self.environment, environment);
 		for statement in statements {
-			self.evaluate_statement(statement, false);
+			let _ = self.evaluate_statement(statement, false);
 		}
 		self.environment = previous;
 	}
@@ -240,6 +238,47 @@ impl Interpreter {
 					message: String::from("Variable must be defined before referenced"),
 				}),
 			},
+			Expression::Or(left_expr, operator, right_expr)
+			| Expression::And(left_expr, operator, right_expr) => {
+				let left = self.evaluate(*left_expr)?;
+				match operator {
+					LogicalOperator::OR => {
+						if is_truthy(&left) {
+							return Ok(left);
+						}
+					}
+					LogicalOperator::AND => {
+						if !is_truthy(&left) {
+							return Ok(left);
+						}
+					}
+				}
+
+				return self.evaluate(*right_expr);
+			}
+		}
+	}
+}
+
+pub fn is_truthy(literal: &Literal) -> bool {
+	match literal {
+		Literal::STRING(s) => {
+			if s.len() == 0 {
+				return false;
+			} else {
+				return true;
+			}
+		}
+		Literal::NUMBER(n) => {
+			if n <= &(0 as f64) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+		Literal::BOOLEAN(b) => b.clone(),
+		Literal::NIL => {
+			return false;
 		}
 	}
 }

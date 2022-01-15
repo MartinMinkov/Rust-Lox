@@ -1,8 +1,5 @@
 use super::Error;
-use super::{
-	BinaryOperator, Expression, ExpressionNode, OperatorTokenType, Statement, TernaryOperator,
-	UnaryOperator,
-};
+use super::*;
 use super::{Literal, Token, TokenType};
 
 type ParseResult<T> = Result<T, ParseError>;
@@ -143,7 +140,7 @@ impl Parser {
 	fn block(&mut self) -> Vec<Statement> {
 		let mut statements: Vec<Statement> = vec![];
 		while self.peek().typ != TokenType::RIGHTBRACE && !self.is_at_end() {
-			self
+			let _ = self
 				.declaration()
 				.map(|statement| statements.push(statement));
 		}
@@ -173,7 +170,7 @@ impl Parser {
 	}
 
 	fn assignment(&mut self) -> ParseResult<ExpressionNode> {
-		let expr = self.ternary()?;
+		let expr = self.or()?;
 
 		if self.peek().typ == TokenType::EQUAL {
 			let token = self.advance();
@@ -190,6 +187,32 @@ impl Parser {
 			}
 		}
 		Ok(expr)
+	}
+
+	fn or(&mut self) -> ParseResult<ExpressionNode> {
+		let left_expr = self.and()?;
+
+		if let Some(logical_op) = self.match_operator_type(vec![LogicalOperator::OR]) {
+			let right_expr = self.and()?;
+			return Ok(ExpressionNode::new(
+				self.current_line(),
+				Expression::Or(Box::new(left_expr), logical_op, Box::new(right_expr)),
+			));
+		}
+		Ok(left_expr)
+	}
+
+	fn and(&mut self) -> ParseResult<ExpressionNode> {
+		let left_expr = self.ternary()?;
+
+		if let Some(logical_op) = self.match_operator_type(vec![LogicalOperator::AND]) {
+			let right_expr = self.ternary()?;
+			return Ok(ExpressionNode::new(
+				self.current_line(),
+				Expression::And(Box::new(left_expr), logical_op, Box::new(right_expr)),
+			));
+		}
+		Ok(left_expr)
 	}
 
 	fn ternary(&mut self) -> ParseResult<ExpressionNode> {

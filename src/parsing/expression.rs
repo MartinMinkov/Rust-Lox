@@ -55,6 +55,8 @@ pub enum Expression {
 	Unary(UnaryOperator, Box<ExpressionNode>),
 	Variable(Token),
 	Assignment(Token, Box<ExpressionNode>),
+	Or(Box<ExpressionNode>, LogicalOperator, Box<ExpressionNode>),
+	And(Box<ExpressionNode>, LogicalOperator, Box<ExpressionNode>),
 }
 
 impl Display for Expression {
@@ -71,6 +73,33 @@ impl Display for Expression {
 			Expression::Unary(operator, right) => write!(f, "({} {})", operator, right),
 			Expression::Variable(var) => write!(f, "{}", var.lexeme),
 			Expression::Assignment(var, expr) => write!(f, "{} {}", var.lexeme, expr),
+			Expression::And(left_expr, op, right_expr) | Expression::Or(left_expr, op, right_expr) => {
+				write!(f, "{} {} {}", left_expr, op, right_expr)
+			}
+		}
+	}
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum LogicalOperator {
+	AND,
+	OR,
+}
+
+impl OperatorTokenType for LogicalOperator {
+	fn token_type(&self) -> TokenType {
+		match *self {
+			LogicalOperator::AND => TokenType::AND,
+			LogicalOperator::OR => TokenType::OR,
+		}
+	}
+}
+
+impl Display for LogicalOperator {
+	fn fmt(&self, f: &mut Formatter) -> FmtResult {
+		match self {
+			LogicalOperator::AND => write!(f, "and"),
+			LogicalOperator::OR => write!(f, "or"),
 		}
 	}
 }

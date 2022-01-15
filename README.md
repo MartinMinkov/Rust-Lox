@@ -16,7 +16,7 @@ varDecl			-> "var" IDENTIFIER ( "=" expression )? ";" ;
 
 statement 		-> exprStmt | ifStmt | printStmt | block ;
 
-block				-> "{" declaration* "}" ;
+block			-> "{" declaration* "}" ;
 
 exprStmt		-> expression ";" ;
 printStmt		-> "print" expression ";" ;
@@ -24,7 +24,9 @@ ifStmt			-> "if" "(" expression ")" statement ("else" statement )? ;
 
 expression		-> comma;
 comma 			-> assigment ( "," assigment )* ;
-assigment			-> "IDENTIFIER" "=" assigment | equality | ternary ;
+assigment		-> "IDENTIFIER" "=" assigment | ternary | logic_or ;
+logic_or		-> logic_and ( "or" logic_and )* ;
+logic_and		-> equality ( "and" equality)* ;
 ternary 		-> equality ( "?" expression ":" ternary )?
 equality		-> comparison ( ( "!=" | "==" ) comparison )* ;
 comparison		-> term ( ( ">" | ">=" | "<" | ">=" ) term)* ;
