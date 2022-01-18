@@ -3,8 +3,8 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Environment {
-	values: HashMap<String, Literal>,
-	enclosing: Option<Box<Environment>>,
+	pub values: HashMap<String, Literal>,
+	pub enclosing: Option<Box<Self>>,
 }
 
 impl Environment {
@@ -15,10 +15,10 @@ impl Environment {
 		}
 	}
 
-	pub fn new_with_environment(environment: Environment) -> Self {
+	pub fn new_with_environment(environment: Box<Environment>) -> Self {
 		Self {
 			values: HashMap::new(),
-			enclosing: Some(Box::new(environment)),
+			enclosing: Some(environment),
 		}
 	}
 
@@ -29,26 +29,27 @@ impl Environment {
 	pub fn get(&self, name: String) -> Option<Literal> {
 		match self.values.get(&name) {
 			Some(variable) => Some(variable.clone()),
-			None => match &self.enclosing {
-				None => {
+			None => self.enclosing.as_ref().map_or_else(
+				|| {
 					println!("could not find in get for {}", name);
 					None
-				}
-				Some(enclosing) => enclosing.get(name),
-			},
+				},
+				|enclosing| enclosing.get(name.clone()),
+			),
 		}
 	}
 
 	pub fn assign(&mut self, name: String, value: Literal) -> Option<Literal> {
-		match self.values.insert(name.clone(), value.clone()) {
-			Some(variable) => Some(variable),
-			None => match &mut self.enclosing {
+		if self.values.contains_key(&name) {
+			return self.values.insert(name.clone(), value.clone());
+		} else {
+			match &mut self.enclosing {
 				None => {
 					println!("could not find in assign for {}", name);
-					None
+					return None;
 				}
-				Some(enclosing) => enclosing.assign(name, value),
-			},
+				Some(enclosing) => return enclosing.assign(name, value),
+			}
 		}
 	}
 

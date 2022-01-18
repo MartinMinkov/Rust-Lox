@@ -16,66 +16,70 @@ impl Interpreter {
 		}
 	}
 
-	pub fn evaluate_statement(&mut self, statement: Statement, run_in_repl: bool) -> Result<()> {
+	pub fn evaluate_statement(&mut self, statement: &Statement, run_in_repl: bool) -> Result<()> {
 		match statement {
 			Statement::PrintStatement(print_expr) => {
-				println!("{}", self.evaluate(*print_expr)?);
+				println!("{}", self.evaluate(&*print_expr)?);
 				Ok(())
 			}
 			Statement::IfStatement(condition, then_branch, else_branch) => {
-				let condition_expr = self.evaluate(*condition)?;
-				match condition_expr {
-					Literal::BOOLEAN(true) => {
-						self.evaluate_statement(*then_branch, run_in_repl)?;
-					}
-					Literal::BOOLEAN(false) => {
-						else_branch
-							.and_then(|else_expr| Some(self.evaluate_statement(*else_expr, run_in_repl)));
-					}
-					_ => {}
+				let condition_expr = self.evaluate(&*condition)?;
+				if is_truthy(&condition_expr) {
+					self.evaluate_statement(&*then_branch, run_in_repl)?;
+				} else {
+					else_branch
+						.as_ref()
+						.and_then(|else_expr| Some(self.evaluate_statement(&*else_expr, run_in_repl)));
 				}
-
+				Ok(())
+			}
+			Statement::WhileStatement(condition, body) => {
+				let mut condition_expr = self.evaluate(&*condition)?;
+				while is_truthy(&condition_expr) {
+					self.evaluate_statement(body, run_in_repl)?;
+					condition_expr = self.evaluate(&*condition)?;
+				}
 				Ok(())
 			}
 			Statement::ExpressionStatement(expr) => {
-				self.evaluate(*expr)?;
+				self.evaluate(&*expr)?;
 				Ok(())
 			}
 			Statement::VariableDeclaration(token, init_expr) => match init_expr {
 				Some(expr) => {
-					let value = self.evaluate(*expr)?;
-					self.environment.define(token.lexeme, value);
+					let value = self.evaluate(&*expr)?;
+					self.environment.define(token.lexeme.clone(), value);
 					Ok(())
 				}
 				None => {
-					self.environment.define(token.lexeme, Literal::NIL);
+					self.environment.define(token.lexeme.clone(), Literal::NIL);
 					Ok(())
 				}
 			},
 			Statement::BlockStatement(statements) => {
-				let current_env = self.environment.clone();
-				self.execute_block(statements, Environment::new_with_environment(current_env));
+				let env = Environment::new_with_environment(Box::new(self.environment.clone()));
+				self.execute_block(statements, env);
 				Ok(())
 			}
 		}
 	}
 
-	fn execute_block(&mut self, statements: Vec<Statement>, environment: Environment) {
-		let previous = mem::replace(&mut self.environment, environment);
+	fn execute_block(&mut self, statements: &Vec<Statement>, environment: Environment) {
+		self.environment = environment;
 		for statement in statements {
-			let _ = self.evaluate_statement(statement, false);
+			let _ = self.evaluate_statement(&statement, false);
 		}
-		self.environment = previous;
+		self.environment = *self.environment.clone().enclosing.unwrap();
 	}
 
-	pub fn evaluate(&mut self, expr_node: ExpressionNode) -> Result<Literal> {
+	pub fn evaluate(&mut self, expr_node: &ExpressionNode) -> Result<Literal> {
 		let expr = expr_node.expression().clone();
 		match expr {
 			Expression::Literal(val) => Ok(val),
-			Expression::Grouping(group_expr) => return self.evaluate(*group_expr),
+			Expression::Grouping(group_expr) => return self.evaluate(&*group_expr),
 			Expression::Unary(unary_op, unary_expr) => {
 				let line = unary_expr.line();
-				let value = self.evaluate(*unary_expr)?;
+				let value = self.evaluate(&*unary_expr)?;
 				match unary_op {
 					UnaryOperator::MINUS => {
 						if let Literal::NUMBER(n) = value {
@@ -101,7 +105,7 @@ impl Interpreter {
 			}
 			Expression::Assignment(variable, assignment_expr) => {
 				let line = assignment_expr.line();
-				let value = self.evaluate(*assignment_expr)?;
+				let value = self.evaluate(&*assignment_expr)?;
 				let variable_name = variable.lexeme.clone();
 				self
 					.environment
@@ -113,8 +117,8 @@ impl Interpreter {
 			}
 			Expression::BinaryExpression(left_expr, bin_op, right_expr) => {
 				let line = left_expr.line();
-				let left = self.evaluate(*left_expr)?;
-				let right = self.evaluate(*right_expr)?;
+				let left = self.evaluate(&*left_expr)?;
+				let right = self.evaluate(&*right_expr)?;
 				match bin_op {
 					BinaryOperator::PLUS => match (left, right) {
 						(Literal::NUMBER(n1), Literal::NUMBER(n2)) => Ok(Literal::NUMBER(n1 + n2)),
@@ -217,9 +221,9 @@ impl Interpreter {
 			}
 			Expression::TernaryExpression(if_expr, ternary_op, left_expr, right_expr) => {
 				let line = if_expr.line();
-				let expr = self.evaluate(*if_expr)?;
-				let left = self.evaluate(*left_expr)?;
-				let right = self.evaluate(*right_expr)?;
+				let expr = self.evaluate(&*if_expr)?;
+				let left = self.evaluate(&*left_expr)?;
+				let right = self.evaluate(&*right_expr)?;
 				match ternary_op {
 					TernaryOperator::QUESTIONMARK => match expr {
 						Literal::BOOLEAN(true) => Ok(left),
@@ -240,7 +244,7 @@ impl Interpreter {
 			},
 			Expression::Or(left_expr, operator, right_expr)
 			| Expression::And(left_expr, operator, right_expr) => {
-				let left = self.evaluate(*left_expr)?;
+				let left = self.evaluate(&*left_expr)?;
 				match operator {
 					LogicalOperator::OR => {
 						if is_truthy(&left) {
@@ -254,7 +258,7 @@ impl Interpreter {
 					}
 				}
 
-				return self.evaluate(*right_expr);
+				return self.evaluate(&*right_expr);
 			}
 		}
 	}

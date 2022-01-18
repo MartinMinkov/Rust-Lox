@@ -89,6 +89,9 @@ impl Parser {
 		} else if current_token.typ == TokenType::PRINT {
 			self.advance();
 			return self.print_statement();
+		} else if current_token.typ == TokenType::WHILE {
+			self.advance();
+			return self.while_statement();
 		} else if current_token.typ == TokenType::LEFTBRACE {
 			self.advance();
 			return Ok(Statement::BlockStatement(self.block()));
@@ -126,6 +129,23 @@ impl Parser {
 			String::from("Expect ';' after value."),
 		);
 		Ok(Statement::PrintStatement(Box::new(expr)))
+	}
+
+	fn while_statement(&mut self) -> ParseResult<Statement> {
+		self.consume(
+			TokenType::LEFTPAREN,
+			String::from("Expect '(' after 'while'."),
+		);
+		let condition = self.expression()?;
+		self.consume(
+			TokenType::RIGHTPAREN,
+			String::from("Expect ')' after while condition."),
+		);
+		let body = self.statement()?;
+		Ok(Statement::WhileStatement(
+			Box::new(condition),
+			Box::new(body),
+		))
 	}
 
 	fn expression_statement(&mut self) -> ParseResult<Statement> {
