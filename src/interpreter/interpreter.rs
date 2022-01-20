@@ -3,7 +3,6 @@ use super::Error;
 use super::Literal;
 use super::Result;
 use super::*;
-use std::mem;
 
 pub struct Interpreter {
 	environment: Environment,

@@ -92,6 +92,9 @@ impl Parser {
 		} else if current_token.typ == TokenType::WHILE {
 			self.advance();
 			return self.while_statement();
+		} else if current_token.typ == TokenType::FOR {
+			self.advance();
+			return self.for_statement();
 		} else if current_token.typ == TokenType::LEFTBRACE {
 			self.advance();
 			return Ok(Statement::BlockStatement(self.block()));
@@ -146,6 +149,61 @@ impl Parser {
 			Box::new(condition),
 			Box::new(body),
 		))
+	}
+
+	fn for_statement(&mut self) -> ParseResult<Statement> {
+		self.consume(
+			TokenType::LEFTPAREN,
+			String::from("Expect '(' after 'for'."),
+		);
+
+		let initializer = match self.advance().typ {
+			TokenType::SEMICOLON => None,
+			TokenType::VAR => Some(self.var_declaration()?),
+			_ => Some(self.expression_statement()?),
+		};
+
+		let condition = match self.peek().typ {
+			TokenType::SEMICOLON => ExpressionNode::new(
+				self.current_line(),
+				Expression::Literal(Literal::BOOLEAN(true)),
+			),
+			_ => self.expression()?,
+		};
+
+		// We evaluate increment first to make the code simpler
+		let increment = match self.advance().typ {
+			TokenType::RIGHTPAREN => None,
+			_ => Some(self.expression()?),
+		};
+
+		self.consume(
+			TokenType::RIGHTPAREN,
+			String::from("Expect ')' after 'for'."),
+		);
+
+		let mut body = self.statement()?;
+
+		// If increment is a valid expression, we replace the current body with
+		// a block statement that holds the current body statements and adds an additional
+		// expression that evaluates the increment expression
+		increment.and_then(|increment| {
+			body = Statement::BlockStatement(vec![
+				body.clone(),
+				Statement::ExpressionStatement(Box::new(increment)),
+			]);
+			Some(())
+		});
+
+		// We build a loop with a primitive while loop
+		body = Statement::WhileStatement(Box::new(condition), Box::new(body.clone()));
+
+		initializer.and_then(|initializer| {
+			body = Statement::BlockStatement(vec![initializer, body.clone()]);
+			Some(())
+		});
+
+		return Ok(body);
 	}
 
 	fn expression_statement(&mut self) -> ParseResult<Statement> {
