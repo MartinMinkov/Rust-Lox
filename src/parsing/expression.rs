@@ -52,6 +52,7 @@ pub enum Expression {
     ),
     BinaryExpression(Box<ExpressionNode>, BinaryOperator, Box<ExpressionNode>),
     Grouping(Box<ExpressionNode>),
+    CallExpression(Box<ExpressionNode>, Token, Vec<ExpressionNode>),
     Literal(Literal),
     Unary(UnaryOperator, Box<ExpressionNode>),
     Variable(Token),
@@ -70,6 +71,9 @@ impl Display for Expression {
                 write!(f, "({} {} {})", operator, left, right)
             }
             Expression::Grouping(expr) => write!(f, "(group {})", expr),
+            Expression::CallExpression(callee_expr, _paren, _args) => {
+                write!(f, "(call {})", callee_expr)
+            }
             Expression::Literal(val) => write!(f, "{}", val),
             Expression::Unary(operator, right) => write!(f, "({} {})", operator, right),
             Expression::Variable(var) => write!(f, "{}", var.lexeme),
@@ -198,6 +202,23 @@ impl Display for TernaryOperator {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
             TernaryOperator::QUESTIONMARK => write!(f, "?"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum CallOperator {
+    LEFTPAREN,
+    RIGHTPAREN,
+    COMMA,
+}
+
+impl OperatorTokenType for CallOperator {
+    fn token_type(&self) -> TokenType {
+        match *self {
+            CallOperator::LEFTPAREN => TokenType::LEFTPAREN,
+            CallOperator::RIGHTPAREN => TokenType::RIGHTPAREN,
+            CallOperator::COMMA => TokenType::COMMA,
         }
     }
 }

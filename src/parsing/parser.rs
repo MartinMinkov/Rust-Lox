@@ -395,7 +395,31 @@ impl Parser {
                 Expression::Unary(unary_op, Box::new(right_expr)),
             ));
         }
-        return self.primary();
+        return self.call();
+    }
+
+    fn call(&mut self) -> ParseResult<ExpressionNode> {
+        let mut expr = self.primary()?;
+        while self.check_token_type(TokenType::LEFTPAREN) {
+            expr = self.finish_call(expr);
+            Ok(expr)
+        }
+    }
+
+    fn finish_call(&mut self, callee: ExpressionNode) -> ParseResult<ExpressionNode> {
+        let mut args: Vec<ExpressionNode> = vec![];
+        if !self.check_token_type(TokenType::RIGHTPAREN) {
+            while self.match_operator_type(vec![CallOperator::COMMA]) {
+                let expr = self.expression()?;
+                args.push(expr)
+            }
+        };
+        self.consume(
+            TokenType::RIGHTPAREN,
+            String::from("Expect ')' after expression."),
+        );
+
+        Ok(expr)
     }
 
     fn primary(&mut self) -> ParseResult<ExpressionNode> {
