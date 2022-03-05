@@ -182,7 +182,7 @@ impl Scanner {
         self.advance();
         let start = self.start + 1;
         let end = self.current - 1;
-        let string_literal = Literal::STRING(self.source[start..end].to_string());
+        let string_literal = Literal::String(self.source[start..end].to_string());
         self.add_token_literal(TokenType::STRING, string_literal)
     }
 
@@ -199,7 +199,7 @@ impl Scanner {
         let number_token = self.source[self.start..self.current]
             .parse::<f64>()
             .unwrap();
-        let float_literal = Literal::NUMBER(number_token);
+        let float_literal = Literal::Number(number_token);
         self.add_token_literal(TokenType::NUMBER, float_literal);
     }
 

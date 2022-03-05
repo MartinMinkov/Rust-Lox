@@ -39,6 +39,7 @@ pub enum Statement {
     WhileStatement(Box<ExpressionNode>, Box<Statement>),
     ExpressionStatement(Box<ExpressionNode>),
     VariableDeclaration(Token, Option<Box<ExpressionNode>>),
+    FunctionDeclaration(Token, Vec<Token>, Vec<Statement>),
     BlockStatement(Vec<Statement>),
 }
 

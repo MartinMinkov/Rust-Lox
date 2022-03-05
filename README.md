@@ -10,9 +10,12 @@ Find and support the book here:
 ```
 program			-> declaration* EOF ;
 
-declaration		-> varDecl | statement ;
+declaration		-> funDecl | varDecl | statement ;
 
 varDecl			-> "var" IDENTIFIER ( "=" expression )? ";" ;
+funDecl		-> "fun" function ;
+function		-> IDENTIFIER "(" parameters? ")" block ;
+parameters		-> IDENTIFIER ( "," IDENTIFIER)* ;
 
 statement 		-> exprStmt | ifStmt | printStmt | whileStmt | forStmt | block ;
 

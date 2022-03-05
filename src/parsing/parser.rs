@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use super::Error;
 use super::*;
 use super::{Literal, Token, TokenType};
@@ -8,6 +10,7 @@ type ParseResult<T> = Result<T, ParseError>;
 pub enum ParseError {
     MissingExpr(Token),
     MissingVariableName(Token),
+    CallArgumentSize(Token),
 }
 
 impl ParseError {
@@ -15,6 +18,9 @@ impl ParseError {
         let (token, message) = match self {
             ParseError::MissingExpr(token) => (token, String::from("Expect expression")),
             ParseError::MissingVariableName(token) => (token, String::from("Expect variable name")),
+            ParseError::CallArgumentSize(token) => {
+                (token, String::from("Can't have more than 255 arguments"))
+            }
         };
         eprintln!(
             "[line {}] Error at {}: {}.",
@@ -49,15 +55,22 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> ParseResult<Statement> {
-        let statement = if self.peek().typ == TokenType::VAR {
-            self.advance();
-            return self.var_declaration();
-        } else {
-            self.statement()
+        let statement = match self.peek().typ {
+            TokenType::VAR => {
+                self.advance();
+                self.var_declaration()
+            }
+            TokenType::FUN => {
+                self.advance();
+                self.fun_declaration("function")
+            }
+            _ => self.statement(),
         };
+
         if statement.is_err() {
             self.synchronize();
         }
+
         statement
     }
 
@@ -79,6 +92,42 @@ impl Parser {
             (Some(name), None) => return Ok(Statement::VariableDeclaration(name, None)),
             (None, _) => return Err(ParseError::MissingVariableName(self.previous())),
         }
+    }
+
+    fn fun_declaration(&mut self, kind: &str) -> ParseResult<Statement> {
+        let fun_name = self.consume(TokenType::IDENTIFIER, format!("Expect {} name.", kind));
+
+        self.consume(
+            TokenType::LEFTPAREN,
+            format!("Expect '(' after {} name.", kind),
+        );
+
+        let mut params: Vec<Token> = vec![];
+
+        if !self.check_token_type(TokenType::RIGHTPAREN) {
+            while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
+                if params.len() >= 255 {
+                    return Err(ParseError::CallArgumentSize(self.previous()));
+                }
+                self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
+                    .and_then(|var_name| Some(params.push(var_name)));
+            }
+        };
+
+        self.consume(
+            TokenType::RIGHTPAREN,
+            String::from("Expect ')' after parameters"),
+        );
+        self.consume(
+            TokenType::LEFTBRACE,
+            format!("Expect '{{' before {} body.", kind),
+        );
+        let body = self.block();
+        return Ok(Statement::FunctionDeclaration(
+            fun_name.unwrap(),
+            params,
+            body,
+        ));
     }
 
     fn statement(&mut self) -> ParseResult<Statement> {
@@ -166,7 +215,7 @@ impl Parser {
         let condition = match self.peek().typ {
             TokenType::SEMICOLON => ExpressionNode::new(
                 self.current_line(),
-                Expression::Literal(Literal::BOOLEAN(true)),
+                Expression::Literal(Literal::Boolean(true)),
             ),
             _ => self.expression()?,
         };
@@ -401,25 +450,34 @@ impl Parser {
     fn call(&mut self) -> ParseResult<ExpressionNode> {
         let mut expr = self.primary()?;
         while self.check_token_type(TokenType::LEFTPAREN) {
-            expr = self.finish_call(expr);
-            Ok(expr)
+            expr = self.finish_call(expr)?;
         }
+        Ok(expr)
     }
 
     fn finish_call(&mut self, callee: ExpressionNode) -> ParseResult<ExpressionNode> {
         let mut args: Vec<ExpressionNode> = vec![];
         if !self.check_token_type(TokenType::RIGHTPAREN) {
-            while self.match_operator_type(vec![CallOperator::COMMA]) {
+            while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
+                if args.len() >= 255 {
+                    return Err(ParseError::CallArgumentSize(self.previous()));
+                }
                 let expr = self.expression()?;
                 args.push(expr)
             }
         };
-        self.consume(
-            TokenType::RIGHTPAREN,
-            String::from("Expect ')' after expression."),
-        );
 
-        Ok(expr)
+        let token = self
+            .consume(
+                TokenType::RIGHTPAREN,
+                String::from("Expect ')' after expression."),
+            )
+            .unwrap();
+
+        Ok(ExpressionNode::new(
+            self.current_line(),
+            Expression::CallExpression(Box::new(callee), token, args),
+        ))
     }
 
     fn primary(&mut self) -> ParseResult<ExpressionNode> {
@@ -431,21 +489,21 @@ impl Parser {
                 self.advance();
                 return Ok(ExpressionNode::new(
                     current_line,
-                    Expression::Literal(Literal::BOOLEAN(true)),
+                    Expression::Literal(Literal::Boolean(true)),
                 ));
             }
             TokenType::FALSE => {
                 self.advance();
                 return Ok(ExpressionNode::new(
                     current_line,
-                    Expression::Literal(Literal::BOOLEAN(false)),
+                    Expression::Literal(Literal::Boolean(false)),
                 ));
             }
             TokenType::NIL => {
                 self.advance();
                 return Ok(ExpressionNode::new(
                     current_line,
-                    Expression::Literal(Literal::NIL),
+                    Expression::Literal(Literal::Nil),
                 ));
             }
             TokenType::NUMBER | TokenType::STRING => {

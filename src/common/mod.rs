@@ -1,6 +1,7 @@
 pub mod error;
 pub mod literal;
 
+pub use super::interpreter::LoxCallable;
 pub use super::parsing::UnaryOperator;
 pub use super::scanner::{Token, TokenType};
 pub use literal::Literal;
