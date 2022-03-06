@@ -1,11 +1,11 @@
+mod ast;
 mod common;
 mod interpreter;
-mod parsing;
 mod scanner;
 
+use ast::Parser;
 use common::Error;
 use interpreter::Interpreter;
-use parsing::Parser;
 use scanner::Scanner;
 use std::env;
 use std::fs;
