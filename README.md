@@ -17,7 +17,7 @@ funDecl		-> "fun" function ;
 function		-> IDENTIFIER "(" parameters? ")" block ;
 parameters		-> IDENTIFIER ( "," IDENTIFIER)* ;
 
-statement 		-> exprStmt | ifStmt | printStmt | whileStmt | forStmt | block ;
+statement 		-> exprStmt | ifStmt | printStmt | whileStmt | forStmt | returnStmt | block ;
 
 block			-> "{" declaration* "}" ;
 
@@ -26,6 +26,7 @@ printStmt		-> "print" expression ";" ;
 ifStmt			-> "if" "(" expression ")" statement ("else" statement )? ;
 whileStmt		-> "while" "(" expression ")" statement ;
 forStmt			-> "for" "(" (varDecl | expression | ";" ) expression? ";" expression? ")" statement ;
+returnStmt		-> "return" expression? ";" ;
 
 expression		-> comma;
 comma 			-> assigment ( "," assigment )* ;
