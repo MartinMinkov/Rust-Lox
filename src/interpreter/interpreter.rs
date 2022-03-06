@@ -66,6 +66,12 @@ impl Interpreter {
                     Ok(())
                 }
             },
+            Statement::FunctionDeclaration(func) => {
+                let f = LoxFunction::new(Function::Declaration(func.clone()));
+                self.environment
+                    .define(f.name().into(), Literal::Callable(Rc::new(f)));
+                Ok(())
+            }
             Statement::BlockStatement(statements) => {
                 let env = Environment::new_with_environment(Box::new(self.environment.clone()));
                 self.execute_block(statements, env);
@@ -86,7 +92,11 @@ impl Interpreter {
         let expr = expr_node.expression().clone();
         let line = expr_node.line();
         match expr {
-            Expression::CallExpression(callee, token, args) => {
+            Expression::FunctionExpression(func) => {
+                let callable = LoxFunction::new(Function::Expression(func.clone()));
+                Ok(Literal::Callable(Rc::new(callable)))
+            }
+            Expression::CallExpression(callee, _token, args) => {
                 let callee_expr = self.evaluate(&*callee)?;
                 let args_expr: Vec<Literal> = args
                     .iter()

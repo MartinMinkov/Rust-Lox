@@ -1,8 +1,6 @@
-use std::fmt::format;
-
 use super::Error;
 use super::*;
-use super::{Literal, Token, TokenType};
+use super::{FunctionDeclaration, Literal, Token, TokenType};
 
 type ParseResult<T> = Result<T, ParseError>;
 
@@ -101,10 +99,12 @@ impl Parser {
             TokenType::LEFTPAREN,
             format!("Expect '(' after {} name.", kind),
         );
-
         let mut params: Vec<Token> = vec![];
 
         if !self.check_token_type(TokenType::RIGHTPAREN) {
+            self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
+                .and_then(|var_name| Some(params.push(var_name)));
+
             while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
                 if params.len() >= 255 {
                     return Err(ParseError::CallArgumentSize(self.previous()));
@@ -122,12 +122,13 @@ impl Parser {
             TokenType::LEFTBRACE,
             format!("Expect '{{' before {} body.", kind),
         );
+
         let body = self.block();
-        return Ok(Statement::FunctionDeclaration(
-            fun_name.unwrap(),
-            params,
+        return Ok(Statement::FunctionDeclaration(FunctionDeclaration {
+            identifier: fun_name.unwrap(),
+            parameters: params,
             body,
-        ));
+        }));
     }
 
     fn statement(&mut self) -> ParseResult<Statement> {
@@ -317,35 +318,35 @@ impl Parser {
     }
 
     fn or(&mut self) -> ParseResult<ExpressionNode> {
-        let left_expr = self.and()?;
+        let mut left_expr = self.and()?;
 
-        if let Some(logical_op) = self.match_operator_type(vec![LogicalOperator::OR]) {
+        while let Some(logical_op) = self.match_operator_type(vec![LogicalOperator::OR]) {
             let right_expr = self.and()?;
-            return Ok(ExpressionNode::new(
+            left_expr = ExpressionNode::new(
                 self.current_line(),
                 Expression::Or(Box::new(left_expr), logical_op, Box::new(right_expr)),
-            ));
+            );
         }
         Ok(left_expr)
     }
 
     fn and(&mut self) -> ParseResult<ExpressionNode> {
-        let left_expr = self.ternary()?;
+        let mut left_expr = self.ternary()?;
 
-        if let Some(logical_op) = self.match_operator_type(vec![LogicalOperator::AND]) {
+        while let Some(logical_op) = self.match_operator_type(vec![LogicalOperator::AND]) {
             let right_expr = self.ternary()?;
-            return Ok(ExpressionNode::new(
+            left_expr = ExpressionNode::new(
                 self.current_line(),
                 Expression::And(Box::new(left_expr), logical_op, Box::new(right_expr)),
-            ));
+            );
         }
         Ok(left_expr)
     }
 
     fn ternary(&mut self) -> ParseResult<ExpressionNode> {
-        let expr = self.equality()?;
+        let mut expr = self.equality()?;
 
-        if let Some(ternary_op) = self.match_operator_type(vec![TernaryOperator::QUESTIONMARK]) {
+        while let Some(ternary_op) = self.match_operator_type(vec![TernaryOperator::QUESTIONMARK]) {
             let left_expr = self.expression()?;
 
             self.consume(
@@ -354,7 +355,7 @@ impl Parser {
             );
 
             let right_expr = self.expression()?;
-            return Ok(ExpressionNode::new(
+            expr = ExpressionNode::new(
                 self.current_line(),
                 Expression::TernaryExpression(
                     Box::new(expr),
@@ -362,80 +363,76 @@ impl Parser {
                     Box::new(left_expr),
                     Box::new(right_expr),
                 ),
-            ));
+            );
         }
         Ok(expr)
     }
 
     fn equality(&mut self) -> ParseResult<ExpressionNode> {
-        let expr = self.comparison()?;
+        let mut expr = self.comparison()?;
 
-        if let Some(binary_op) =
+        while let Some(binary_op) =
             self.match_operator_type(vec![BinaryOperator::BANGEQUAL, BinaryOperator::EQUALEQUAL])
         {
             let right_expr = self.comparison()?;
-
-            return Ok(ExpressionNode::new(
+            expr = ExpressionNode::new(
                 self.current_line(),
                 Expression::BinaryExpression(Box::new(expr), binary_op, Box::new(right_expr)),
-            ));
+            );
         }
         Ok(expr)
     }
 
     fn comparison(&mut self) -> ParseResult<ExpressionNode> {
-        let expr = self.term()?;
+        let mut expr = self.term()?;
 
-        if let Some(binary_op) = self.match_operator_type(vec![
+        while let Some(binary_op) = self.match_operator_type(vec![
             BinaryOperator::GREATER,
             BinaryOperator::GREATEREQUAL,
             BinaryOperator::LESS,
             BinaryOperator::LESSEQUAL,
         ]) {
             let right_expr = self.term()?;
-
-            return Ok(ExpressionNode::new(
+            expr = ExpressionNode::new(
                 self.current_line(),
                 Expression::BinaryExpression(Box::new(expr), binary_op, Box::new(right_expr)),
-            ));
+            );
         }
         Ok(expr)
     }
 
     fn term(&mut self) -> ParseResult<ExpressionNode> {
-        let expr = self.factor()?;
+        let mut expr = self.factor()?;
 
-        if let Some(binary_op) =
+        while let Some(binary_op) =
             self.match_operator_type(vec![BinaryOperator::MINUS, BinaryOperator::PLUS])
         {
             let right_expr = self.factor()?;
-
-            return Ok(ExpressionNode::new(
+            expr = ExpressionNode::new(
                 self.current_line(),
                 Expression::BinaryExpression(Box::new(expr), binary_op, Box::new(right_expr)),
-            ));
+            );
         }
         Ok(expr)
     }
 
     fn factor(&mut self) -> ParseResult<ExpressionNode> {
-        let expr = self.unary()?;
+        let mut expr = self.unary()?;
 
-        if let Some(binary_op) =
+        while let Some(binary_op) =
             self.match_operator_type(vec![BinaryOperator::SLASH, BinaryOperator::STAR])
         {
             let right_expr = self.unary()?;
-
-            return Ok(ExpressionNode::new(
+            expr = ExpressionNode::new(
                 self.current_line(),
                 Expression::BinaryExpression(Box::new(expr), binary_op, Box::new(right_expr)),
-            ));
+            );
         }
         Ok(expr)
     }
 
     fn unary(&mut self) -> ParseResult<ExpressionNode> {
-        if let Some(unary_op) =
+        while let Some(unary_op) =
             self.match_operator_type(vec![UnaryOperator::BANG, UnaryOperator::MINUS])
         {
             let right_expr = self.unary()?;
@@ -450,6 +447,7 @@ impl Parser {
     fn call(&mut self) -> ParseResult<ExpressionNode> {
         let mut expr = self.primary()?;
         while self.check_token_type(TokenType::LEFTPAREN) {
+            self.advance();
             expr = self.finish_call(expr)?;
         }
         Ok(expr)
@@ -457,13 +455,20 @@ impl Parser {
 
     fn finish_call(&mut self, callee: ExpressionNode) -> ParseResult<ExpressionNode> {
         let mut args: Vec<ExpressionNode> = vec![];
+
         if !self.check_token_type(TokenType::RIGHTPAREN) {
-            while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
+            loop {
                 if args.len() >= 255 {
                     return Err(ParseError::CallArgumentSize(self.previous()));
                 }
-                let expr = self.expression()?;
-                args.push(expr)
+                let expr = self.assignment()?;
+                args.push(expr);
+                if self
+                    .match_operator_type(vec![CallOperator::COMMA])
+                    .is_none()
+                {
+                    break;
+                }
             }
         };
 

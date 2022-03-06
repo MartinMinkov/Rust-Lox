@@ -1,19 +1,25 @@
-use super::{Environment, Interpreter, Literal, LoxCallable, Result, Statement};
+use super::{Environment, Function, Interpreter, Literal, LoxCallable, Result};
 
 #[derive(Debug)]
 pub struct LoxFunction {
-    declaration: Statement,
+    function: Function,
+}
+
+impl LoxFunction {
+    pub fn new(function: Function) -> Self {
+        Self { function }
+    }
 }
 
 impl LoxCallable for LoxFunction {
     fn call(&self, interpreter: &mut Interpreter, args: Vec<Literal>) -> Result<Literal> {
         let mut environment = Environment::new_with_environment(Box::new(interpreter.globals()));
-        match &self.declaration {
-            Statement::FunctionDeclaration(_, params, body) => {
-                for (param, token) in params.into_iter().zip(args) {
+        match &self.function {
+            Function::Declaration(func) => {
+                for (param, token) in func.parameters.iter().zip(args) {
                     environment.define(param.lexeme.clone(), token.clone())
                 }
-                interpreter.execute_block(&body, environment)
+                interpreter.execute_block(&func.body, environment)
             }
             _ => println!("unreachable"),
         }
@@ -21,15 +27,15 @@ impl LoxCallable for LoxFunction {
     }
 
     fn arity(&self) -> usize {
-        match &self.declaration {
-            Statement::FunctionDeclaration(_, params, _) => params.len(),
+        match &self.function {
+            Function::Declaration(f) => f.parameters.len(),
             _ => 0,
         }
     }
 
     fn name(&self) -> &str {
-        match &self.declaration {
-            Statement::FunctionDeclaration(name, _, _) => name.lexeme.as_str(),
+        match &self.function {
+            Function::Declaration(f) => f.identifier.lexeme.as_str(),
             _ => "anonymous",
         }
     }

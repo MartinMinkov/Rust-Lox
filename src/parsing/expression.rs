@@ -1,5 +1,5 @@
 use super::Literal;
-use super::{BinaryOperator, LogicalOperator, TernaryOperator, Token, UnaryOperator};
+use super::{BinaryOperator, LogicalOperator, Statement, TernaryOperator, Token, UnaryOperator};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, Clone)]
@@ -29,6 +29,41 @@ impl Display for ExpressionNode {
 }
 
 #[derive(Debug, Clone)]
+pub struct FunctionDeclaration {
+    pub identifier: Token,
+    pub parameters: Vec<Token>,
+    pub body: Vec<Statement>,
+}
+
+impl Display for FunctionDeclaration {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "FunctionDeclaration: {}", self.identifier)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionExpression {
+    pub parameters: Vec<Token>,
+    pub body: Vec<Statement>,
+}
+
+impl Display for FunctionExpression {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "FunctionExpression");
+        for param in &self.parameters {
+            write!(f, "{}", param);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Function {
+    Declaration(FunctionDeclaration),
+    Expression(FunctionExpression),
+}
+
+#[derive(Debug, Clone)]
 pub enum Expression {
     TernaryExpression(
         Box<ExpressionNode>,
@@ -39,6 +74,7 @@ pub enum Expression {
     BinaryExpression(Box<ExpressionNode>, BinaryOperator, Box<ExpressionNode>),
     Grouping(Box<ExpressionNode>),
     CallExpression(Box<ExpressionNode>, Token, Vec<ExpressionNode>),
+    FunctionExpression(FunctionExpression),
     Literal(Literal),
     Unary(UnaryOperator, Box<ExpressionNode>),
     Variable(Token),
@@ -59,6 +95,9 @@ impl Display for Expression {
             Expression::Grouping(expr) => write!(f, "(group {})", expr),
             Expression::CallExpression(callee_expr, _paren, _args) => {
                 write!(f, "(call {})", callee_expr)
+            }
+            Expression::FunctionExpression(expr) => {
+                write!(f, "({})", expr)
             }
             Expression::Literal(val) => write!(f, "{}", val),
             Expression::Unary(operator, right) => write!(f, "({} {})", operator, right),
