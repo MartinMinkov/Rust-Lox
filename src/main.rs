@@ -53,7 +53,7 @@ fn run(source: std::string::String, run_in_repl: bool) {
     let mut interpreter = Interpreter::new();
     for statement in statements {
         match interpreter.evaluate_statement(&statement, run_in_repl) {
-            Ok(()) => {}
+            Ok(_) => {}
             Err(err) => {
                 Error::error(err.line, err.message);
             }

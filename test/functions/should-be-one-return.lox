@@ -1,0 +1,6 @@
+fun helloWorld() {
+	return "should be hello world";
+	return "shouldn't be second return";
+}
+
+print helloWorld();

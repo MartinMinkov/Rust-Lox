@@ -132,24 +132,33 @@ impl Parser {
     }
 
     fn statement(&mut self) -> ParseResult<Statement> {
-        let current_token = self.peek();
-        if current_token.typ == TokenType::IF {
-            self.advance();
-            return self.if_statement();
-        } else if current_token.typ == TokenType::PRINT {
-            self.advance();
-            return self.print_statement();
-        } else if current_token.typ == TokenType::WHILE {
-            self.advance();
-            return self.while_statement();
-        } else if current_token.typ == TokenType::FOR {
-            self.advance();
-            return self.for_statement();
-        } else if current_token.typ == TokenType::LEFTBRACE {
-            self.advance();
-            return Ok(Statement::BlockStatement(self.block()));
+        match &self.peek().typ {
+            TokenType::IF => {
+                self.advance();
+                return self.if_statement();
+            }
+            TokenType::PRINT => {
+                self.advance();
+                return self.print_statement();
+            }
+            TokenType::WHILE => {
+                self.advance();
+                return self.while_statement();
+            }
+            TokenType::FOR => {
+                self.advance();
+                return self.for_statement();
+            }
+            TokenType::RETURN => {
+                self.advance();
+                return self.return_statement();
+            }
+            TokenType::LEFTBRACE => {
+                self.advance();
+                return Ok(Statement::BlockStatement(self.block()));
+            }
+            _ => self.expression_statement(),
         }
-        self.expression_statement()
     }
 
     fn if_statement(&mut self) -> ParseResult<Statement> {
@@ -183,6 +192,27 @@ impl Parser {
             String::from("Expect ';' after value."),
         );
         Ok(Statement::PrintStatement(Box::new(expr)))
+    }
+
+    fn return_statement(&mut self) -> ParseResult<Statement> {
+        let expr = match self.peek().typ {
+            TokenType::SEMICOLON => Some(ExpressionNode::new(
+                self.current_line(),
+                Expression::Literal(Literal::Nil),
+            )),
+            _ => Some(self.expression()?),
+        }
+        .unwrap();
+
+        self.consume(
+            TokenType::SEMICOLON,
+            String::from("Expect ';' after return value."),
+        );
+
+        Ok(Statement::ReturnStatement(
+            self.previous(),
+            Some(Box::new(expr)),
+        ))
     }
 
     fn while_statement(&mut self) -> ParseResult<Statement> {

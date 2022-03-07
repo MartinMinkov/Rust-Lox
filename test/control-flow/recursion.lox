@@ -1,0 +1,9 @@
+fun recurse(n) {
+	print n;
+	if (n == 0) {
+		return n;
+	}
+	recurse(n-1);
+}
+
+recurse(5);

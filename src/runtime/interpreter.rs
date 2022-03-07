@@ -1,3 +1,5 @@
+use chrono::ParseResult;
+
 use super::Environment;
 use super::Error;
 use super::Literal;
@@ -9,6 +11,8 @@ pub struct Interpreter {
     globals: Environment,
     environment: Environment,
 }
+
+type StatementResult = Option<Literal>;
 
 impl Interpreter {
     pub fn new() -> Self {
@@ -26,11 +30,24 @@ impl Interpreter {
         self.globals.clone()
     }
 
-    pub fn evaluate_statement(&mut self, statement: &Statement, run_in_repl: bool) -> Result<()> {
+    pub fn evaluate_statement(
+        &mut self,
+        statement: &Statement,
+        run_in_repl: bool,
+    ) -> Result<StatementResult> {
         match statement {
+            Statement::ReturnStatement(_token, return_expr) => match return_expr {
+                Some(return_expr) => match self.evaluate(&*return_expr) {
+                    Ok(return_value) => {
+                        return Ok(Some(return_value));
+                    }
+                    _ => return Ok(None),
+                },
+                _ => Ok(None),
+            },
             Statement::PrintStatement(print_expr) => {
                 println!("{}", self.evaluate(&*print_expr)?);
-                Ok(())
+                Ok(None)
             }
             Statement::IfStatement(condition, then_branch, else_branch) => {
                 let condition_expr = self.evaluate(&*condition)?;
@@ -41,7 +58,7 @@ impl Interpreter {
                         Some(self.evaluate_statement(&*else_expr, run_in_repl))
                     });
                 }
-                Ok(())
+                Ok(None)
             }
             Statement::WhileStatement(condition, body) => {
                 let mut condition_expr = self.evaluate(&*condition)?;
@@ -49,43 +66,58 @@ impl Interpreter {
                     self.evaluate_statement(body, run_in_repl)?;
                     condition_expr = self.evaluate(&*condition)?;
                 }
-                Ok(())
+                Ok(None)
             }
             Statement::ExpressionStatement(expr) => {
                 self.evaluate(&*expr)?;
-                Ok(())
+                Ok(None)
             }
             Statement::VariableDeclaration(token, init_expr) => match init_expr {
                 Some(expr) => {
                     let value = self.evaluate(&*expr)?;
                     self.environment.define(token.lexeme.clone(), value);
-                    Ok(())
+                    Ok(None)
                 }
                 None => {
                     self.environment.define(token.lexeme.clone(), Literal::Nil);
-                    Ok(())
+                    Ok(None)
                 }
             },
             Statement::FunctionDeclaration(func) => {
                 let f = LoxFunction::new(Function::Declaration(func.clone()));
                 self.environment
                     .define(f.name().into(), Literal::Callable(Rc::new(f)));
-                Ok(())
+                Ok(None)
             }
             Statement::BlockStatement(statements) => {
                 let env = Environment::new_with_environment(Box::new(self.environment.clone()));
                 self.execute_block(statements, env);
-                Ok(())
+                Ok(None)
             }
         }
     }
 
-    pub fn execute_block(&mut self, statements: &Vec<Statement>, environment: Environment) {
+    pub fn execute_block(
+        &mut self,
+        statements: &Vec<Statement>,
+        environment: Environment,
+    ) -> ParseResult<StatementResult> {
         self.environment = environment;
+        let mut return_result: ParseResult<StatementResult> = Ok(None);
         for statement in statements {
-            let _ = self.evaluate_statement(&statement, false);
+            match self.evaluate_statement(&statement, false) {
+                Ok(return_value) => match return_value {
+                    Some(literal) => {
+                        return_result = Ok(Some(literal));
+                        break;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
         }
         self.environment = *self.environment.clone().enclosing.unwrap();
+        return_result
     }
 
     pub fn evaluate(&mut self, expr_node: &ExpressionNode) -> Result<Literal> {

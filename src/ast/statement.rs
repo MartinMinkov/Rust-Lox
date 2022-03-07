@@ -9,4 +9,5 @@ pub enum Statement {
     VariableDeclaration(Token, Option<Box<ExpressionNode>>),
     FunctionDeclaration(FunctionDeclaration),
     BlockStatement(Vec<Statement>),
+    ReturnStatement(Token, Option<Box<ExpressionNode>>),
 }

@@ -19,7 +19,14 @@ impl LoxCallable for LoxFunction {
                 for (param, token) in func.parameters.iter().zip(args) {
                     environment.define(param.lexeme.clone(), token.clone())
                 }
-                interpreter.execute_block(&func.body, environment)
+                let result = interpreter.execute_block(&func.body, environment);
+                match result {
+                    Ok(return_value) => match return_value {
+                        Some(literal) => return Ok(literal),
+                        _ => {}
+                    },
+                    _ => {}
+                }
             }
             _ => println!("unreachable"),
         }
