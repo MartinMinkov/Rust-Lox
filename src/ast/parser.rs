@@ -162,8 +162,9 @@ impl Parser {
 
         let then_branch = self.statement()?;
         let mut else_branch = None;
-        self.advance();
+
         if self.peek().typ == TokenType::ELSE {
+            self.advance();
             let else_statement = self.statement()?;
             else_branch = Some(Box::new(else_statement))
         }
