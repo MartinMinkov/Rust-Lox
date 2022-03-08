@@ -5,29 +5,20 @@ use super::Error;
 use super::Literal;
 use super::Result;
 use super::*;
+use std::mem;
 use std::rc::Rc;
 
 pub struct Interpreter {
-    globals: Environment,
-    environment: Environment,
+    pub environment: Environment,
 }
 
 type StatementResult = Option<Literal>;
 
 impl Interpreter {
     pub fn new() -> Self {
-        let globals = Environment::new();
-        let mut environment = globals.clone();
+        let mut environment = Environment::new();
         environment.define(Clock.name().into(), Literal::Callable(Rc::new(Clock)));
-
-        Self {
-            globals,
-            environment,
-        }
-    }
-
-    pub fn globals(&self) -> Environment {
-        self.globals.clone()
+        Self { environment }
     }
 
     pub fn evaluate_statement(
@@ -52,7 +43,10 @@ impl Interpreter {
             Statement::IfStatement(condition, then_branch, else_branch) => {
                 let condition_expr = self.evaluate(&*condition)?;
                 if Literal::is_truthy(&condition_expr) {
-                    self.evaluate_statement(&*then_branch, run_in_repl)?;
+                    return match self.evaluate_statement(&*then_branch, run_in_repl) {
+                        Ok(block) => Ok(block),
+                        Err(_) => Ok(None),
+                    };
                 } else {
                     else_branch.as_ref().and_then(|else_expr| {
                         Some(self.evaluate_statement(&*else_expr, run_in_repl))
@@ -91,8 +85,10 @@ impl Interpreter {
             }
             Statement::BlockStatement(statements) => {
                 let env = Environment::new_with_environment(Box::new(self.environment.clone()));
-                self.execute_block(statements, env);
-                Ok(None)
+                match self.execute_block(statements, env) {
+                    Ok(block) => Ok(block),
+                    Err(_) => Ok(None),
+                }
             }
         }
     }
@@ -102,7 +98,7 @@ impl Interpreter {
         statements: &Vec<Statement>,
         environment: Environment,
     ) -> ParseResult<StatementResult> {
-        self.environment = environment;
+        let previous = mem::replace(&mut self.environment, environment);
         let mut return_result: ParseResult<StatementResult> = Ok(None);
         for statement in statements {
             match self.evaluate_statement(&statement, false) {
@@ -116,7 +112,7 @@ impl Interpreter {
                 _ => {}
             }
         }
-        self.environment = *self.environment.clone().enclosing.unwrap();
+        self.environment = previous;
         return_result
     }
 

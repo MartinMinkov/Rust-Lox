@@ -54,9 +54,20 @@ impl Environment {
     }
 
     #[allow(dead_code)]
-    pub fn print(&self) {
+    pub fn print_environment(&self) {
+        println!("-------------------------");
+        println!("Printing Env");
         for (key, value) in &self.values {
             println!("{} = {}", key, value);
         }
+        let mut temp_env = self.enclosing.clone();
+        while temp_env.is_some() {
+            println!("Printing Enclosing");
+            for (key, value) in &self.values {
+                println!("{} = {}", key, value);
+            }
+            temp_env = temp_env.unwrap().enclosing;
+        }
+        println!("-------------------------");
     }
 }

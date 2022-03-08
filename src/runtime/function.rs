@@ -13,7 +13,8 @@ impl LoxFunction {
 
 impl LoxCallable for LoxFunction {
     fn call(&self, interpreter: &mut Interpreter, args: Vec<Literal>) -> Result<Literal> {
-        let mut environment = Environment::new_with_environment(Box::new(interpreter.globals()));
+        let mut environment =
+            Environment::new_with_environment(Box::new(interpreter.environment.clone()));
         match &self.function {
             Function::Declaration(func) => {
                 for (param, token) in func.parameters.iter().zip(args) {
