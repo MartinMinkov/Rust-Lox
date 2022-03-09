@@ -29,12 +29,10 @@ impl Interpreter {
         match statement {
             Statement::ReturnStatement(_token, return_expr) => match return_expr {
                 Some(return_expr) => match self.evaluate(&*return_expr) {
-                    Ok(return_value) => {
-                        return Ok(Some(return_value));
-                    }
-                    _ => return Ok(None),
+                    Ok(return_value) => Ok(Some(return_value)),
+                    Err(e) => Err(e),
                 },
-                _ => Ok(None),
+                None => Ok(None),
             },
             Statement::PrintStatement(print_expr) => {
                 println!("{}", self.evaluate(&*print_expr)?);
@@ -43,16 +41,13 @@ impl Interpreter {
             Statement::IfStatement(condition, then_branch, else_branch) => {
                 let condition_expr = self.evaluate(&*condition)?;
                 if Literal::is_truthy(&condition_expr) {
-                    return match self.evaluate_statement(&*then_branch, run_in_repl) {
-                        Ok(block) => Ok(block),
-                        Err(_) => Ok(None),
-                    };
+                    return self.evaluate_statement(&*then_branch, run_in_repl);
                 } else {
-                    else_branch.as_ref().and_then(|else_expr| {
-                        Some(self.evaluate_statement(&*else_expr, run_in_repl))
-                    });
+                    return match else_branch {
+                        Some(else_expr) => self.evaluate_statement(&*else_expr, run_in_repl),
+                        None => return Ok(None),
+                    };
                 }
-                Ok(None)
             }
             Statement::WhileStatement(condition, body) => {
                 let mut condition_expr = self.evaluate(&*condition)?;
@@ -97,9 +92,9 @@ impl Interpreter {
         &mut self,
         statements: &Vec<Statement>,
         environment: Environment,
-    ) -> ParseResult<StatementResult> {
+    ) -> Result<StatementResult> {
         let previous = mem::replace(&mut self.environment, environment);
-        let mut return_result: ParseResult<StatementResult> = Ok(None);
+        let mut return_result = Ok(None);
         for statement in statements {
             match self.evaluate_statement(&statement, false) {
                 Ok(return_value) => match return_value {

@@ -21,6 +21,7 @@ impl LoxCallable for LoxFunction {
                     environment.define(param.lexeme.clone(), token.clone())
                 }
                 let result = interpreter.execute_block(&func.body, environment);
+                // TODO: Refactor this
                 match result {
                     Ok(return_value) => match return_value {
                         Some(literal) => return Ok(literal),
