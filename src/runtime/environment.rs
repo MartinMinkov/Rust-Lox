@@ -1,10 +1,12 @@
 use super::Literal;
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Environment {
     pub values: HashMap<String, Literal>,
-    pub enclosing: Option<Box<Self>>,
+    pub enclosing: Option<Rc<RefCell<Environment>>>,
 }
 
 impl Environment {
@@ -15,10 +17,10 @@ impl Environment {
         }
     }
 
-    pub fn new_with_environment(environment: Box<Environment>) -> Self {
+    pub fn new_with_environment(enclosing: &Rc<RefCell<Environment>>) -> Self {
         Self {
             values: HashMap::new(),
-            enclosing: Some(environment),
+            enclosing: Some(Rc::clone(enclosing)),
         }
     }
 
@@ -34,7 +36,7 @@ impl Environment {
                     println!("could not find in get for {}", name);
                     None
                 },
-                |enclosing| enclosing.get(name.clone()),
+                |enclosing| enclosing.borrow().get(name.clone()),
             ),
         }
     }
@@ -48,26 +50,33 @@ impl Environment {
                     println!("could not find in assign for {}", name);
                     return None;
                 }
-                Some(enclosing) => return enclosing.assign(name, value),
+                Some(enclosing) => return enclosing.borrow_mut().assign(name, value),
             }
         }
     }
 
     #[allow(dead_code)]
     pub fn print_environment(&self) {
-        println!("-------------------------");
-        println!("Printing Env");
+        println!("---------- Printing Values ----------");
         for (key, value) in &self.values {
             println!("{} = {}", key, value);
         }
+        println!("---------- Printing Values ----------");
         let mut temp_env = self.enclosing.clone();
+        println!("---------- Printing Enclosed ----------");
         while temp_env.is_some() {
-            println!("Printing Enclosing");
-            for (key, value) in &self.values {
+            for (key, value) in temp_env.clone().unwrap().borrow().values.clone() {
                 println!("{} = {}", key, value);
             }
-            temp_env = temp_env.unwrap().enclosing;
+            temp_env = temp_env
+                .clone()
+                .as_ref()
+                .unwrap()
+                .borrow()
+                .enclosing
+                .clone();
         }
-        println!("-------------------------");
+        println!("---------- Printing Enclosed ----------");
+        println!();
     }
 }

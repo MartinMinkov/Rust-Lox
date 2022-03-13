@@ -1,4 +1,6 @@
 use super::{Environment, Function, Interpreter, Literal, LoxCallable, Result};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct LoxFunction {
@@ -13,12 +15,16 @@ impl LoxFunction {
 
 impl LoxCallable for LoxFunction {
     fn call(&self, interpreter: &mut Interpreter, args: Vec<Literal>) -> Result<Literal> {
-        let mut environment =
-            Environment::new_with_environment(Box::new(interpreter.environment.clone()));
+        let environment = Rc::new(RefCell::new(Environment::new_with_environment(
+            &interpreter.environment,
+        )));
+
         match &self.function {
             Function::Declaration(func) => {
                 for (param, token) in func.parameters.iter().zip(args) {
-                    environment.define(param.lexeme.clone(), token.clone())
+                    environment
+                        .borrow_mut()
+                        .define(param.lexeme.clone(), token.clone())
                 }
                 let result = interpreter.execute_block(&func.body, environment);
                 // TODO: Refactor this

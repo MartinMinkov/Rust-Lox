@@ -17,7 +17,7 @@
         }
       },
       "args": [
-        "./test/control-flow/recursion.lox"
+        "./test/loops/while.lox"
       ],
       "cwd": "${workspaceFolder}"
     },

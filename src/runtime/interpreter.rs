@@ -1,23 +1,24 @@
-use chrono::ParseResult;
-
 use super::Environment;
 use super::Error;
 use super::Literal;
 use super::Result;
 use super::*;
+use std::cell::RefCell;
 use std::mem;
 use std::rc::Rc;
 
 pub struct Interpreter {
-    pub environment: Environment,
+    pub environment: Rc<RefCell<Environment>>,
 }
 
 type StatementResult = Option<Literal>;
 
 impl Interpreter {
     pub fn new() -> Self {
-        let mut environment = Environment::new();
-        environment.define(Clock.name().into(), Literal::Callable(Rc::new(Clock)));
+        let mut environment = Rc::new(RefCell::new(Environment::new()));
+        environment
+            .borrow_mut()
+            .define(Clock.name().into(), Literal::Callable(Rc::new(Clock)));
         Self { environment }
     }
 
@@ -64,23 +65,32 @@ impl Interpreter {
             Statement::VariableDeclaration(token, init_expr) => match init_expr {
                 Some(expr) => {
                     let value = self.evaluate(&*expr)?;
-                    self.environment.define(token.lexeme.clone(), value);
+                    self.environment
+                        .borrow_mut()
+                        .define(token.lexeme.clone(), value);
                     Ok(None)
                 }
                 None => {
-                    self.environment.define(token.lexeme.clone(), Literal::Nil);
+                    self.environment
+                        .borrow_mut()
+                        .define(token.lexeme.clone(), Literal::Nil);
                     Ok(None)
                 }
             },
             Statement::FunctionDeclaration(func) => {
                 let f = LoxFunction::new(Function::Declaration(func.clone()));
                 self.environment
+                    .borrow_mut()
                     .define(f.name().into(), Literal::Callable(Rc::new(f)));
                 Ok(None)
             }
             Statement::BlockStatement(statements) => {
-                let env = Environment::new_with_environment(Box::new(self.environment.clone()));
-                match self.execute_block(statements, env) {
+                match self.execute_block(
+                    statements,
+                    Rc::new(RefCell::new(Environment::new_with_environment(
+                        &self.environment,
+                    ))),
+                ) {
                     Ok(block) => Ok(block),
                     Err(_) => Ok(None),
                 }
@@ -91,9 +101,10 @@ impl Interpreter {
     pub fn execute_block(
         &mut self,
         statements: &Vec<Statement>,
-        environment: Environment,
+        environment: Rc<RefCell<Environment>>,
     ) -> Result<StatementResult> {
-        let previous = mem::replace(&mut self.environment, environment);
+        let previous = self.environment.clone();
+        self.environment = environment;
         let mut return_result = Ok(None);
         for statement in statements {
             match self.evaluate_statement(&statement, false) {
@@ -179,6 +190,7 @@ impl Interpreter {
                 let value = self.evaluate(&*assignment_expr)?;
                 let variable_name = variable.lexeme.clone();
                 self.environment
+                    .borrow_mut()
                     .assign(variable.lexeme, value)
                     .ok_or_else(|| Error {
                         line: line.into(),
@@ -325,7 +337,7 @@ impl Interpreter {
                     },
                 }
             }
-            Expression::Variable(token) => match self.environment.get(token.lexeme) {
+            Expression::Variable(token) => match self.environment.borrow().get(token.lexeme) {
                 Some(variable) => Ok(variable),
                 _ => Err(Error {
                     line: token.line,
