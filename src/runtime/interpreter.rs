@@ -4,7 +4,6 @@ use super::Literal;
 use super::Result;
 use super::*;
 use std::cell::RefCell;
-use std::mem;
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -15,7 +14,7 @@ type StatementResult = Option<Literal>;
 
 impl Interpreter {
     pub fn new() -> Self {
-        let mut environment = Rc::new(RefCell::new(Environment::new()));
+        let environment = Rc::new(RefCell::new(Environment::new()));
         environment
             .borrow_mut()
             .define(Clock.name().into(), Literal::Callable(Rc::new(Clock)));
@@ -78,7 +77,10 @@ impl Interpreter {
                 }
             },
             Statement::FunctionDeclaration(func) => {
-                let f = LoxFunction::new(Function::Declaration(func.clone()));
+                let closure = Rc::new(RefCell::new(Environment::new_with_environment(
+                    &self.environment,
+                )));
+                let f = LoxFunction::new(Function::Declaration(func.clone()), closure);
                 self.environment
                     .borrow_mut()
                     .define(f.name().into(), Literal::Callable(Rc::new(f)));
@@ -127,7 +129,8 @@ impl Interpreter {
         let line = expr_node.line();
         match expr {
             Expression::FunctionExpression(func) => {
-                let callable = LoxFunction::new(Function::Expression(func.clone()));
+                let callable =
+                    LoxFunction::new(Function::Expression(func.clone()), self.environment.clone());
                 Ok(Literal::Callable(Rc::new(callable)))
             }
             Expression::CallExpression(callee, _token, args) => {

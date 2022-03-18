@@ -17,7 +17,7 @@ funDecl		-> "fun" function ;
 function		-> IDENTIFIER "(" parameters? ")" block ;
 parameters		-> IDENTIFIER ( "," IDENTIFIER)* ;
 
-statement 		-> exprStmt | ifStmt | printStmt | whileStmt | forStmt | returnStmt | block ;
+statement 		-> exprStmt | funExpr | ifStmt | printStmt | whileStmt | forStmt | returnStmt | block ;
 
 block			-> "{" declaration* "}" ;
 
@@ -42,7 +42,8 @@ unary 			-> ( ("!" | "-" ) unary | call ) ;
 call			-> ( "(" arguments? ")" )* ;
 arguments		-> expression ( "," expression *) ;
 
-primary 		-> ( NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ) ;
+funExpr			-> "fun" "(" parameters ")" block ;
+primary 		-> ( NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER | funExpr ) ;
 ```
 
 # Added Features from Challenges

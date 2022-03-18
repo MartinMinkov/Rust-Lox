@@ -17,7 +17,7 @@
         }
       },
       "args": [
-        "./test/loops/while.lox"
+        "./test/functions/anonymous1.lox"
       ],
       "cwd": "${workspaceFolder}"
     },

@@ -99,18 +99,18 @@ impl Parser {
             TokenType::LEFTPAREN,
             format!("Expect '(' after {} name.", kind),
         );
-        let mut params: Vec<Token> = vec![];
+        let mut parameters: Vec<Token> = vec![];
 
         if !self.check_token_type(TokenType::RIGHTPAREN) {
             self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
-                .and_then(|var_name| Some(params.push(var_name)));
+                .and_then(|var_name| Some(parameters.push(var_name)));
 
             while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
-                if params.len() >= 255 {
+                if parameters.len() >= 255 {
                     return Err(ParseError::CallArgumentSize(self.previous()));
                 }
                 self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
-                    .and_then(|var_name| Some(params.push(var_name)));
+                    .and_then(|var_name| Some(parameters.push(var_name)));
             }
         };
 
@@ -126,7 +126,7 @@ impl Parser {
         let body = self.block();
         return Ok(Statement::FunctionDeclaration(FunctionDeclaration {
             identifier: fun_name.unwrap(),
-            parameters: params,
+            parameters,
             body,
         }));
     }
@@ -568,10 +568,51 @@ impl Parser {
                     Expression::Variable(current_token),
                 ));
             }
+            TokenType::FUN => {
+                self.advance();
+                return self.fun_expression("function");
+            }
             _ => {
                 return Err(ParseError::MissingExpr(current_token));
             }
         };
+    }
+
+    fn fun_expression(&mut self, kind: &str) -> ParseResult<ExpressionNode> {
+        self.consume(
+            TokenType::LEFTPAREN,
+            format!("Expect '(' after {} name.", kind),
+        );
+        let mut parameters: Vec<Token> = vec![];
+
+        if !self.check_token_type(TokenType::RIGHTPAREN) {
+            self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
+                .and_then(|var_name| Some(parameters.push(var_name)));
+
+            while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
+                if parameters.len() >= 255 {
+                    return Err(ParseError::CallArgumentSize(self.previous()));
+                }
+                self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
+                    .and_then(|var_name| Some(parameters.push(var_name)));
+            }
+        };
+
+        self.consume(
+            TokenType::RIGHTPAREN,
+            String::from("Expect ')' after parameters"),
+        );
+        self.consume(
+            TokenType::LEFTBRACE,
+            format!("Expect '{{' before {} body.", kind),
+        );
+
+        let body = self.block();
+
+        Ok(ExpressionNode::new(
+            self.current_line(),
+            Expression::FunctionExpression(FunctionExpression { parameters, body }),
+        ))
     }
 
     fn match_operator_type<T: OperatorTokenType>(&mut self, types: Vec<T>) -> Option<T> {
