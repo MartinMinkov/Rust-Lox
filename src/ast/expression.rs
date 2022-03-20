@@ -48,10 +48,10 @@ pub struct FunctionExpression {
 }
 
 impl Display for FunctionExpression {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "FunctionExpression");
+    fn fmt(&self, _: &mut Formatter) -> FmtResult {
+        println!("FunctionExpression");
         for param in &self.parameters {
-            write!(f, "{}", param);
+            println!("{}", param);
         }
         Ok(())
     }

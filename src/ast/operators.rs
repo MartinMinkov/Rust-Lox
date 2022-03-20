@@ -127,16 +127,12 @@ impl Display for TernaryOperator {
 
 #[derive(Copy, Clone, Debug)]
 pub enum CallOperator {
-    LEFTPAREN,
-    RIGHTPAREN,
     COMMA,
 }
 
 impl OperatorTokenType for CallOperator {
     fn token_type(&self) -> TokenType {
         match *self {
-            CallOperator::LEFTPAREN => TokenType::LEFTPAREN,
-            CallOperator::RIGHTPAREN => TokenType::RIGHTPAREN,
             CallOperator::COMMA => TokenType::COMMA,
         }
     }

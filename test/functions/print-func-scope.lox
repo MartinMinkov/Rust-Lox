@@ -1,0 +1,10 @@
+fun scope(a) {
+	print "Printing inner";
+	var a = "local";
+	print a;
+}
+
+var outer = "outer";
+scope("outer");
+print "Printing outer";
+print outer;
