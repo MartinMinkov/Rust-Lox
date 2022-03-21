@@ -31,8 +31,8 @@ impl Display for ExpressionNode {
 #[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
     pub identifier: Token,
-    pub parameters: Vec<Token>,
-    pub body: Vec<Statement>,
+    parameters: Vec<Token>,
+    body: Vec<Statement>,
 }
 
 impl Display for FunctionDeclaration {
@@ -43,8 +43,8 @@ impl Display for FunctionDeclaration {
 
 #[derive(Debug, Clone)]
 pub struct FunctionExpression {
-    pub parameters: Vec<Token>,
-    pub body: Vec<Statement>,
+    parameters: Vec<Token>,
+    body: Vec<Statement>,
 }
 
 impl Display for FunctionExpression {
@@ -61,6 +61,29 @@ impl Display for FunctionExpression {
 pub enum Function {
     Declaration(FunctionDeclaration),
     Expression(FunctionExpression),
+}
+
+impl Function {
+    pub fn identifier(&self) -> &str {
+        match &self {
+            Function::Declaration(func) => func.identifier.lexeme.as_str(),
+            Function::Expression(func) => "fn anonymous",
+        }
+    }
+
+    pub fn parameters(&self) -> Vec<Token> {
+        match &self {
+            Function::Declaration(func) => func.parameters.clone(),
+            Function::Expression(func) => func.parameters.clone(),
+        }
+    }
+
+    pub fn body(&self) -> Vec<Statement> {
+        match &self {
+            Function::Declaration(func) => func.body.clone(),
+            Function::Expression(func) => func.body.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

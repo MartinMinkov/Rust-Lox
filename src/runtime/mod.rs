@@ -3,6 +3,7 @@ pub mod callable;
 pub mod environment;
 pub mod function;
 pub mod interpreter;
+pub mod resolver;
 
 use super::ast::*;
 use super::common::{Error, Literal, Result};
