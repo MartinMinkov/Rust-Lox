@@ -4,12 +4,12 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, Clone)]
 pub struct ExpressionNode {
-    line: u16,
+    line: usize,
     expr: Expression,
 }
 
 impl ExpressionNode {
-    pub fn new(line: u16, expr: Expression) -> Self {
+    pub fn new(line: usize, expr: Expression) -> Self {
         Self { line, expr }
     }
 
@@ -17,7 +17,7 @@ impl ExpressionNode {
         &self.expr
     }
 
-    pub fn line(&self) -> u16 {
+    pub fn line(&self) -> usize {
         self.line
     }
 }
@@ -30,13 +30,13 @@ impl Display for ExpressionNode {
 
 #[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
-    pub identifier: Token,
-    parameters: Vec<Token>,
+    pub identifier: Identifier,
+    parameters: Vec<Identifier>,
     body: Vec<Statement>,
 }
 
 impl FunctionDeclaration {
-    pub fn new(identifier: Token, parameters: Vec<Token>, body: Vec<Statement>) -> Self {
+    pub fn new(identifier: Identifier, parameters: Vec<Identifier>, body: Vec<Statement>) -> Self {
         Self {
             identifier,
             parameters,
@@ -47,16 +47,16 @@ impl FunctionDeclaration {
 
 impl Display for FunctionDeclaration {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "FunctionDeclaration: {}", self.identifier)
+        write!(f, "FunctionDeclaration: {}", self.identifier.get_name())
     }
 }
 
 impl FunctionInfo for FunctionDeclaration {
-    fn identifier(&self) -> &str {
+    fn identifier(&self) -> String {
         self.identifier()
     }
 
-    fn parameters(&self) -> Vec<Token> {
+    fn parameters(&self) -> Vec<Identifier> {
         self.parameters()
     }
 
@@ -67,12 +67,12 @@ impl FunctionInfo for FunctionDeclaration {
 
 #[derive(Debug, Clone)]
 pub struct FunctionExpression {
-    parameters: Vec<Token>,
+    parameters: Vec<Identifier>,
     body: Vec<Statement>,
 }
 
 impl FunctionExpression {
-    pub fn new(parameters: Vec<Token>, body: Vec<Statement>) -> Self {
+    pub fn new(parameters: Vec<Identifier>, body: Vec<Statement>) -> Self {
         Self { parameters, body }
     }
 }
@@ -81,18 +81,18 @@ impl Display for FunctionExpression {
     fn fmt(&self, _: &mut Formatter) -> FmtResult {
         println!("FunctionExpression");
         for param in &self.parameters {
-            println!("{}", param);
+            println!("{}", param.get_name());
         }
         Ok(())
     }
 }
 
 impl FunctionInfo for FunctionExpression {
-    fn identifier(&self) -> &str {
+    fn identifier(&self) -> String {
         self.identifier()
     }
 
-    fn parameters(&self) -> Vec<Token> {
+    fn parameters(&self) -> Vec<Identifier> {
         self.parameters()
     }
 
@@ -108,20 +108,20 @@ pub enum Function {
 }
 
 pub trait FunctionInfo {
-    fn identifier(&self) -> &str;
-    fn parameters(&self) -> Vec<Token>;
+    fn identifier(&self) -> String;
+    fn parameters(&self) -> Vec<Identifier>;
     fn body(&self) -> Vec<Statement>;
 }
 
 impl FunctionInfo for Function {
-    fn identifier(&self) -> &str {
+    fn identifier(&self) -> String {
         match &self {
-            Function::Declaration(func) => func.identifier.lexeme.as_str(),
-            Function::Expression(func) => "fn anonymous",
+            Function::Declaration(func) => func.identifier.get_name(),
+            Function::Expression(func) => "fn anonymous".to_string(),
         }
     }
 
-    fn parameters(&self) -> Vec<Token> {
+    fn parameters(&self) -> Vec<Identifier> {
         match &self {
             Function::Declaration(func) => func.parameters.clone(),
             Function::Expression(func) => func.parameters.clone(),
@@ -133,6 +133,60 @@ impl FunctionInfo for Function {
             Function::Declaration(func) => func.body.clone(),
             Function::Expression(func) => func.body.clone(),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Identifier {
+    name: String,
+    line: usize,
+}
+
+impl Identifier {
+    pub fn new(name: String, line: usize) -> Self {
+        Self { name, line }
+    }
+
+    pub fn token_to_id(token: Token) -> Self {
+        Self {
+            name: token.lexeme,
+            line: token.line,
+        }
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn get_line(&self) -> usize {
+        self.line
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Variable {
+    identifier: Identifier,
+    depth: Option<usize>,
+}
+
+impl Variable {
+    pub fn new(identifier: Identifier, depth: Option<usize>) -> Self {
+        return Self { identifier, depth };
+    }
+
+    pub fn default(identifier: Identifier) -> Self {
+        return Self {
+            identifier,
+            depth: None,
+        };
+    }
+
+    pub fn get_identifier(&self) -> Identifier {
+        self.identifier.clone()
+    }
+
+    pub fn get_depth(&self) -> Option<usize> {
+        self.depth
     }
 }
 
@@ -150,8 +204,8 @@ pub enum Expression {
     FunctionExpression(FunctionExpression),
     Literal(Literal),
     Unary(UnaryOperator, Box<ExpressionNode>),
-    Variable(Token),
-    Assignment(Token, Box<ExpressionNode>),
+    Variable(Variable),
+    Assignment(Variable, Box<ExpressionNode>),
     Or(Box<ExpressionNode>, LogicalOperator, Box<ExpressionNode>),
     And(Box<ExpressionNode>, LogicalOperator, Box<ExpressionNode>),
 }
@@ -174,8 +228,10 @@ impl Display for Expression {
             }
             Expression::Literal(val) => write!(f, "{}", val),
             Expression::Unary(operator, right) => write!(f, "({} {})", operator, right),
-            Expression::Variable(var) => write!(f, "{}", var.lexeme),
-            Expression::Assignment(var, expr) => write!(f, "{} {}", var.lexeme, expr),
+            Expression::Variable(variable) => write!(f, "{}", variable.get_identifier().get_name()),
+            Expression::Assignment(variable, expr) => {
+                write!(f, "{} {}", variable.get_identifier().get_name(), expr)
+            }
             Expression::And(left_expr, op, right_expr)
             | Expression::Or(left_expr, op, right_expr) => {
                 write!(f, "{} {} {}", left_expr, op, right_expr)

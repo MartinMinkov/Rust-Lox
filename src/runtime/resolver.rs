@@ -1,11 +1,27 @@
+use crate::ast::expression::Identifier;
+
 use super::{
-    Error, Expression, ExpressionNode, FunctionInfo, Interpreter, Result, Statement, Token,
+    Error, Expression, ExpressionNode, FunctionInfo, Interpreter, Result, Statement, Variable,
 };
 use std::collections::HashMap;
 
+pub struct ResolverVariable {
+    initialized: bool,
+}
+
+impl ResolverVariable {
+    pub fn unresolved() -> Self {
+        Self { initialized: false }
+    }
+
+    pub fn resolved() -> Self {
+        Self { initialized: true }
+    }
+}
+
 pub struct Resolver {
     interpreter: Interpreter,
-    scopes: Vec<HashMap<String, bool>>,
+    scopes: Vec<HashMap<String, ResolverVariable>>,
 }
 
 impl Resolver {
@@ -16,20 +32,20 @@ impl Resolver {
         }
     }
 
-    pub fn visit_statement(&mut self, statement: Statement) -> Result<()> {
-        match &statement {
+    pub fn resolve_statement(&mut self, statement: &Statement) -> Result<()> {
+        match statement {
             Statement::BlockStatement(statements) => {
                 self.begin_scope();
                 self.resolve_statements(statements);
                 self.end_scope();
                 Ok(())
             }
-            Statement::VariableDeclaration(token, init_expr) => {
-                self.declare(&token);
+            Statement::VariableDeclaration(id, init_expr) => {
+                self.declare(id);
                 if init_expr.is_some() {
                     self.resolve_expr(init_expr.as_ref().unwrap());
                 }
-                self.define(&token);
+                self.define(id);
                 Ok(())
             }
             Statement::FunctionDeclaration(func) => {
@@ -55,7 +71,7 @@ impl Resolver {
                 self.resolve_expr(print_expr);
                 Ok(())
             }
-            Statement::ReturnStatement(_token, return_expr) => {
+            Statement::ReturnStatement(return_expr) => {
                 return_expr.as_ref().and_then(|expr| {
                     self.resolve_expr(&expr);
                     Some(expr)
@@ -70,14 +86,14 @@ impl Resolver {
         }
     }
 
-    pub fn visit_expression(&mut self, expression: ExpressionNode) -> Result<()> {
+    pub fn resolve_expr(&mut self, expression: &ExpressionNode) -> Result<()> {
         match expression.expression() {
-            Expression::Variable(token) => {
+            Expression::Variable(variable) => {
                 if let Some(scope) = self.peek_scope() {
-                    if let Some(initializer) = scope.get(&token.lexeme) {
-                        if *initializer == false {
+                    if let Some(initializer) = scope.get(&variable.get_identifier().get_name()) {
+                        if !initializer.initialized {
                             return Err(Error {
-                                line: token.line,
+                                line: variable.get_identifier().get_line(),
                                 message: String::from(
                                     "Can't read local variable in its own initializer",
                                 ),
@@ -85,7 +101,7 @@ impl Resolver {
                         }
                     }
                 }
-                self.resolve_local(expression.expression(), token);
+                self.resolve_local(expression.expression(), variable);
                 Ok(())
             }
             Expression::Assignment(variable, assignment_expr) => {
@@ -101,7 +117,7 @@ impl Resolver {
             Expression::CallExpression(callee, _token, args) => {
                 self.resolve_expr(callee);
                 for arg in args {
-                    self.resolve_expr(arg)
+                    self.resolve_expr(arg);
                 }
                 Ok(())
             }
@@ -133,29 +149,21 @@ impl Resolver {
         }
     }
 
-    pub fn resolve_statements(&self, statements: &Vec<Statement>) {
+    pub fn resolve_statements(&mut self, statements: &Vec<Statement>) {
         for statement in statements {
             self.resolve_statement(statement);
         }
     }
 
-    fn resolve_statement(&self, statement: &Statement) {
-        todo!()
-    }
-
-    fn resolve_expr(&self, expr: &ExpressionNode) {
-        todo!()
-    }
-
-    fn resolve_local(&mut self, expr: &Expression, name: &Token) {
-        for (i, scope) in self.scopes.iter().enumerate().rev() {
-            if scope.contains_key(&name.lexeme) {
+    fn resolve_local(&mut self, expr: &Expression, variable: &Variable) {
+        for (i, scope) in self.scopes.iter().rev().enumerate() {
+            if scope.contains_key(&variable.get_identifier().get_name()) {
                 self.interpreter.resolve(expr, self.scopes.len() - i - 1);
             }
         }
     }
 
-    fn resolve_function(&mut self, params: Vec<Token>, body: Vec<Statement>) {
+    fn resolve_function(&mut self, params: Vec<Identifier>, body: Vec<Statement>) {
         self.begin_scope();
         for param in params {
             self.declare(&param);
@@ -165,19 +173,19 @@ impl Resolver {
         self.end_scope()
     }
 
-    fn declare(&mut self, name: &Token) {
+    fn declare(&mut self, name: &Identifier) {
         if let Some(scope) = self.peek_scope() {
-            scope.insert(name.lexeme.clone(), false);
+            scope.insert(name.get_name(), ResolverVariable::unresolved());
         };
     }
 
-    fn define(&mut self, name: &Token) {
+    fn define(&mut self, name: &Identifier) {
         if let Some(scope) = self.peek_scope() {
-            scope.insert(name.lexeme.clone(), true);
+            scope.insert(name.get_name(), ResolverVariable::resolved());
         };
     }
 
-    fn peek_scope(&mut self) -> Option<&mut HashMap<String, bool>> {
+    fn peek_scope(&mut self) -> Option<&mut HashMap<String, ResolverVariable>> {
         self.scopes.last_mut()
     }
 

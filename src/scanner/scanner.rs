@@ -5,7 +5,7 @@ pub struct Scanner {
     source: String,
     start: usize,
     current: usize,
-    line: u16,
+    line: usize,
     pub tokens: Vec<Token>,
     pub had_error: bool,
 }

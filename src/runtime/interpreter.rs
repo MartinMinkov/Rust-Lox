@@ -4,10 +4,12 @@ use super::Literal;
 use super::Result;
 use super::*;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 pub struct Interpreter {
     pub environment: Rc<RefCell<Environment>>,
+    pub locals: HashMap<Expression, usize>,
 }
 
 type StatementResult = Option<Literal>;
@@ -15,14 +17,18 @@ type StatementResult = Option<Literal>;
 impl Interpreter {
     pub fn new() -> Self {
         let environment = Rc::new(RefCell::new(Environment::new()));
+        let locals = HashMap::new();
         environment
             .borrow_mut()
             .define(Clock.name().into(), Literal::Callable(Rc::new(Clock)));
-        Self { environment }
+        Self {
+            environment,
+            locals,
+        }
     }
 
-    pub fn resolve(&self, expr: &Expression, hops: usize) {
-        todo!()
+    pub fn resolve(&self, expr: &Expression, depth: usize) {
+        todo!();
     }
 
     pub fn evaluate_statement(
@@ -31,7 +37,7 @@ impl Interpreter {
         run_in_repl: bool,
     ) -> Result<StatementResult> {
         match statement {
-            Statement::ReturnStatement(_token, return_expr) => match return_expr {
+            Statement::ReturnStatement(return_expr) => match return_expr {
                 Some(return_expr) => match self.evaluate(&*return_expr) {
                     Ok(return_value) => Ok(Some(return_value)),
                     Err(e) => Err(e),
@@ -65,18 +71,16 @@ impl Interpreter {
                 self.evaluate(&*expr)?;
                 Ok(None)
             }
-            Statement::VariableDeclaration(token, init_expr) => match init_expr {
+            Statement::VariableDeclaration(id, init_expr) => match init_expr {
                 Some(expr) => {
                     let value = self.evaluate(&*expr)?;
-                    self.environment
-                        .borrow_mut()
-                        .define(token.lexeme.clone(), value);
+                    self.environment.borrow_mut().define(id.get_name(), value);
                     Ok(None)
                 }
                 None => {
                     self.environment
                         .borrow_mut()
-                        .define(token.lexeme.clone(), Literal::Nil);
+                        .define(id.get_name(), Literal::Nil);
                     Ok(None)
                 }
             },
@@ -192,16 +196,19 @@ impl Interpreter {
                     }
                 }
             }
-            Expression::Assignment(variable, assignment_expr) => {
+            Expression::Assignment(id, assignment_expr) => {
                 let line = assignment_expr.line();
                 let value = self.evaluate(&*assignment_expr)?;
-                let variable_name = variable.lexeme.clone();
+                let variable_name = id.get_identifier().get_name();
                 self.environment
                     .borrow_mut()
-                    .assign(variable.lexeme, value)
+                    .assign(variable_name, value)
                     .ok_or_else(|| Error {
                         line: line.into(),
-                        message: String::from(format!("Undefined {} variable.", variable_name)),
+                        message: String::from(format!(
+                            "Undefined {} variable.",
+                            id.get_identifier().get_name()
+                        )),
                     })
             }
             Expression::BinaryExpression(left_expr, bin_op, right_expr) => {
@@ -344,10 +351,14 @@ impl Interpreter {
                     },
                 }
             }
-            Expression::Variable(token) => match self.environment.borrow().get(token.lexeme) {
+            Expression::Variable(id) => match self
+                .environment
+                .borrow()
+                .get(id.get_identifier().get_name())
+            {
                 Some(variable) => Ok(variable),
                 _ => Err(Error {
-                    line: token.line,
+                    line: id.get_identifier().get_line(),
                     message: String::from("Variable must be defined before referenced"),
                 }),
             },

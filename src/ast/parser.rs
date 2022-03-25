@@ -1,6 +1,6 @@
 use super::Error;
 use super::*;
-use super::{FunctionDeclaration, Literal, Token, TokenType};
+use super::{FunctionDeclaration, Identifier, Literal, Token, TokenType, Variable};
 
 type ParseResult<T> = Result<T, ParseError>;
 
@@ -85,9 +85,17 @@ impl Parser {
         );
         match (var_name, init) {
             (Some(name), Some(expr)) => {
-                return Ok(Statement::VariableDeclaration(name, Some(Box::new(expr))))
+                return Ok(Statement::VariableDeclaration(
+                    Identifier::token_to_id(name),
+                    Some(Box::new(expr)),
+                ))
             }
-            (Some(name), None) => return Ok(Statement::VariableDeclaration(name, None)),
+            (Some(name), None) => {
+                return Ok(Statement::VariableDeclaration(
+                    Identifier::token_to_id(name),
+                    None,
+                ))
+            }
             (None, _) => return Err(ParseError::MissingVariableName(self.previous())),
         }
     }
@@ -99,18 +107,18 @@ impl Parser {
             TokenType::LEFTPAREN,
             format!("Expect '(' after {} name.", kind),
         );
-        let mut parameters: Vec<Token> = vec![];
+        let mut parameters: Vec<Identifier> = vec![];
 
         if !self.check_token_type(TokenType::RIGHTPAREN) {
             self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
-                .and_then(|var_name| Some(parameters.push(var_name)));
+                .and_then(|var_name| Some(parameters.push(Identifier::token_to_id(var_name))));
 
             while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
                 if parameters.len() >= 255 {
                     return Err(ParseError::CallArgumentSize(self.previous()));
                 }
                 self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
-                    .and_then(|var_name| Some(parameters.push(var_name)));
+                    .and_then(|var_name| Some(parameters.push(Identifier::token_to_id(var_name))));
             }
         };
 
@@ -125,7 +133,7 @@ impl Parser {
 
         let body = self.block();
         return Ok(Statement::FunctionDeclaration(FunctionDeclaration::new(
-            fun_name.unwrap(),
+            Identifier::token_to_id(fun_name.unwrap()),
             parameters,
             body,
         )));
@@ -209,10 +217,7 @@ impl Parser {
             String::from("Expect ';' after return value."),
         );
 
-        Ok(Statement::ReturnStatement(
-            self.previous(),
-            Some(Box::new(expr)),
-        ))
+        Ok(Statement::ReturnStatement(Some(Box::new(expr))))
     }
 
     fn while_statement(&mut self) -> ParseResult<Statement> {
@@ -565,7 +570,7 @@ impl Parser {
                 self.advance();
                 return Ok(ExpressionNode::new(
                     current_line,
-                    Expression::Variable(current_token),
+                    Expression::Variable(Variable::default(Identifier::token_to_id(current_token))),
                 ));
             }
             TokenType::FUN => {
@@ -583,18 +588,18 @@ impl Parser {
             TokenType::LEFTPAREN,
             format!("Expect '(' after {} name.", kind),
         );
-        let mut parameters: Vec<Token> = vec![];
+        let mut parameters: Vec<Identifier> = vec![];
 
         if !self.check_token_type(TokenType::RIGHTPAREN) {
             self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
-                .and_then(|var_name| Some(parameters.push(var_name)));
+                .and_then(|var_name| Some(parameters.push(Identifier::token_to_id(var_name))));
 
             while let Some(_) = self.match_operator_type(vec![CallOperator::COMMA]) {
                 if parameters.len() >= 255 {
                     return Err(ParseError::CallArgumentSize(self.previous()));
                 }
                 self.consume(TokenType::IDENTIFIER, String::from("Expect variable name."))
-                    .and_then(|var_name| Some(parameters.push(var_name)));
+                    .and_then(|var_name| Some(parameters.push(Identifier::token_to_id(var_name))));
             }
         };
 
@@ -647,7 +652,7 @@ impl Parser {
         self.previous()
     }
 
-    fn current_line(&mut self) -> u16 {
+    fn current_line(&mut self) -> usize {
         self.peek().line
     }
 

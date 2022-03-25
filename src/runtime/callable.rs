@@ -6,7 +6,7 @@ use std::fmt;
 pub trait LoxCallable: fmt::Debug {
     fn call(&self, interpreter: &mut Interpreter, args: Vec<Literal>) -> Result<Literal>;
     fn arity(&self) -> usize;
-    fn name(&self) -> &str;
+    fn name(&self) -> String;
 }
 
 impl fmt::Display for dyn LoxCallable {

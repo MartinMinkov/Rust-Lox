@@ -13,7 +13,7 @@ impl LoxCallable for Clock {
         0
     }
 
-    fn name(&self) -> &str {
-        "clock"
+    fn name(&self) -> String {
+        "clock".to_string()
     }
 }

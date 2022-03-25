@@ -23,7 +23,7 @@ impl LoxCallable for LoxFunction {
         for (parameter, value) in self.function.parameters().iter().zip(args.iter()) {
             environment
                 .borrow_mut()
-                .define(parameter.lexeme.clone(), value.clone())
+                .define(parameter.get_name().clone(), value.clone())
         }
         let result = interpreter.execute_block(&self.function.body(), environment);
         match result {
@@ -40,7 +40,7 @@ impl LoxCallable for LoxFunction {
         self.function.parameters().len()
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> String {
         self.function.identifier()
     }
 }

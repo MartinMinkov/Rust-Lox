@@ -107,11 +107,11 @@ pub struct Token {
     pub typ: TokenType,
     pub lexeme: String,
     pub literal: Option<Literal>,
-    pub line: u16,
+    pub line: usize,
 }
 
 impl Token {
-    pub fn new(typ: TokenType, lexeme: String, literal: Option<Literal>, line: u16) -> Self {
+    pub fn new(typ: TokenType, lexeme: String, literal: Option<Literal>, line: usize) -> Self {
         Self {
             typ,
             lexeme,

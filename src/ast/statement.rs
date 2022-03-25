@@ -1,4 +1,4 @@
-use super::{ExpressionNode, FunctionDeclaration, Token};
+use super::{ExpressionNode, FunctionDeclaration, Identifier};
 
 #[derive(Debug, Clone)]
 pub enum Statement {
@@ -6,8 +6,8 @@ pub enum Statement {
     IfStatement(Box<ExpressionNode>, Box<Statement>, Option<Box<Statement>>),
     WhileStatement(Box<ExpressionNode>, Box<Statement>),
     ExpressionStatement(Box<ExpressionNode>),
-    VariableDeclaration(Token, Option<Box<ExpressionNode>>),
+    VariableDeclaration(Identifier, Option<Box<ExpressionNode>>),
     FunctionDeclaration(FunctionDeclaration),
     BlockStatement(Vec<Statement>),
-    ReturnStatement(Token, Option<Box<ExpressionNode>>),
+    ReturnStatement(Option<Box<ExpressionNode>>),
 }

@@ -3,15 +3,15 @@ pub use super::{Token, TokenType};
 #[derive(Debug)]
 pub struct Error {
     pub message: String,
-    pub line: u16,
+    pub line: usize,
 }
 
 impl Error {
-    pub fn error(line: u16, message: String) {
+    pub fn error(line: usize, message: String) {
         Error::report(line, String::from(""), message);
     }
 
-    pub fn report(line: u16, location: String, message: String) {
+    pub fn report(line: usize, location: String, message: String) {
         println!("[line {} ] Error {} : {}", line, location, message)
     }
 }
