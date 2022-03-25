@@ -21,6 +21,10 @@ impl Interpreter {
         Self { environment }
     }
 
+    pub fn resolve(&self, expr: &Expression, hops: usize) {
+        todo!()
+    }
+
     pub fn evaluate_statement(
         &mut self,
         statement: &Statement,

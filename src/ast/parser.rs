@@ -124,11 +124,11 @@ impl Parser {
         );
 
         let body = self.block();
-        return Ok(Statement::FunctionDeclaration(FunctionDeclaration {
-            identifier: fun_name.unwrap(),
+        return Ok(Statement::FunctionDeclaration(FunctionDeclaration::new(
+            fun_name.unwrap(),
             parameters,
             body,
-        }));
+        )));
     }
 
     fn statement(&mut self) -> ParseResult<Statement> {
@@ -611,7 +611,7 @@ impl Parser {
 
         Ok(ExpressionNode::new(
             self.current_line(),
-            Expression::FunctionExpression(FunctionExpression { parameters, body }),
+            Expression::FunctionExpression(FunctionExpression::new(parameters, body)),
         ))
     }
 

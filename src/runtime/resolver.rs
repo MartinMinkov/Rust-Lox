@@ -1,4 +1,6 @@
-use super::{Error, Expression, ExpressionNode, Function, Interpreter, Result, Statement, Token};
+use super::{
+    Error, Expression, ExpressionNode, FunctionInfo, Interpreter, Result, Statement, Token,
+};
 use std::collections::HashMap;
 
 pub struct Resolver {
@@ -33,37 +35,33 @@ impl Resolver {
             Statement::FunctionDeclaration(func) => {
                 self.declare(&func.identifier);
                 self.declare(&func.identifier);
-                self.resolve_function(func);
+                self.resolve_function(func.parameters(), func.body());
                 Ok(())
             }
             Statement::ExpressionStatement(expr) => {
                 self.resolve_expr(expr);
                 Ok(())
             }
-
             Statement::IfStatement(condition, then_branch, else_branch) => {
                 self.resolve_expr(&condition);
                 self.resolve_statement(&then_branch);
-                else_branch.and_then(|else_expr| {
+                else_branch.as_ref().and_then(|else_expr| {
                     self.resolve_statement(&else_expr);
                     Some(else_expr)
                 });
                 Ok(())
             }
-
             Statement::PrintStatement(print_expr) => {
                 self.resolve_expr(print_expr);
                 Ok(())
             }
-
             Statement::ReturnStatement(_token, return_expr) => {
-                return_expr.and_then(|expr| {
+                return_expr.as_ref().and_then(|expr| {
                     self.resolve_expr(&expr);
                     Some(expr)
                 });
                 Ok(())
             }
-
             Statement::WhileStatement(condition, body) => {
                 self.resolve_expr(condition);
                 self.resolve_statement(&body);
@@ -90,19 +88,16 @@ impl Resolver {
                 self.resolve_local(expression.expression(), token);
                 Ok(())
             }
-
             Expression::Assignment(variable, assignment_expr) => {
                 // self.resolve(variable);
                 self.resolve_local(assignment_expr.expression(), variable);
                 Ok(())
             }
-
             Expression::BinaryExpression(left_expr, bin_op, right_expr) => {
                 self.resolve_expr(left_expr);
                 self.resolve_expr(right_expr);
                 Ok(())
             }
-
             Expression::CallExpression(callee, _token, args) => {
                 self.resolve_expr(callee);
                 for arg in args {
@@ -114,7 +109,6 @@ impl Resolver {
                 self.resolve_expr(group_expr);
                 Ok(())
             }
-
             Expression::Literal(_) => Ok(()),
             Expression::Or(left_expr, operator, right_expr)
             | Expression::And(left_expr, operator, right_expr) => {
@@ -122,21 +116,18 @@ impl Resolver {
                 self.resolve_expr(right_expr);
                 Ok(())
             }
-
             Expression::Unary(unary_op, unary_expr) => {
                 self.resolve_expr(unary_expr);
                 Ok(())
             }
-
             Expression::TernaryExpression(if_expr, ternary_op, left_expr, right_expr) => {
                 self.resolve_expr(if_expr);
                 self.resolve_expr(left_expr);
                 self.resolve_expr(right_expr);
                 Ok(())
             }
-
             Expression::FunctionExpression(func) => {
-                self.resolve_function(func);
+                self.resolve_function(func.parameters(), func.body());
                 Ok(())
             }
         }
@@ -159,18 +150,18 @@ impl Resolver {
     fn resolve_local(&mut self, expr: &Expression, name: &Token) {
         for (i, scope) in self.scopes.iter().enumerate().rev() {
             if scope.contains_key(&name.lexeme) {
-                self.interpreter.resolve(expr, self.scopes.len() - i - 1)
+                self.interpreter.resolve(expr, self.scopes.len() - i - 1);
             }
         }
     }
 
-    fn resolve_function(&mut self, function: &Function) {
+    fn resolve_function(&mut self, params: Vec<Token>, body: Vec<Statement>) {
         self.begin_scope();
-        for param in function.parameters() {
+        for param in params {
             self.declare(&param);
             self.define(&param);
         }
-        self.resolve_statements(&function.body());
+        self.resolve_statements(&body);
         self.end_scope()
     }
 

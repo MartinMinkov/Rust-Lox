@@ -1,4 +1,4 @@
-use super::{Environment, Function, Interpreter, Literal, LoxCallable, Result, Statement, Token};
+use super::{Environment, Function, FunctionInfo, Interpreter, Literal, LoxCallable, Result};
 use std::cell::RefCell;
 use std::rc::Rc;
 

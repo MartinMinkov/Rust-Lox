@@ -35,9 +35,33 @@ pub struct FunctionDeclaration {
     body: Vec<Statement>,
 }
 
+impl FunctionDeclaration {
+    pub fn new(identifier: Token, parameters: Vec<Token>, body: Vec<Statement>) -> Self {
+        Self {
+            identifier,
+            parameters,
+            body,
+        }
+    }
+}
+
 impl Display for FunctionDeclaration {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "FunctionDeclaration: {}", self.identifier)
+    }
+}
+
+impl FunctionInfo for FunctionDeclaration {
+    fn identifier(&self) -> &str {
+        self.identifier()
+    }
+
+    fn parameters(&self) -> Vec<Token> {
+        self.parameters()
+    }
+
+    fn body(&self) -> Vec<Statement> {
+        self.body()
     }
 }
 
@@ -45,6 +69,12 @@ impl Display for FunctionDeclaration {
 pub struct FunctionExpression {
     parameters: Vec<Token>,
     body: Vec<Statement>,
+}
+
+impl FunctionExpression {
+    pub fn new(parameters: Vec<Token>, body: Vec<Statement>) -> Self {
+        Self { parameters, body }
+    }
 }
 
 impl Display for FunctionExpression {
@@ -57,28 +87,48 @@ impl Display for FunctionExpression {
     }
 }
 
+impl FunctionInfo for FunctionExpression {
+    fn identifier(&self) -> &str {
+        self.identifier()
+    }
+
+    fn parameters(&self) -> Vec<Token> {
+        self.parameters()
+    }
+
+    fn body(&self) -> Vec<Statement> {
+        self.body()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Function {
     Declaration(FunctionDeclaration),
     Expression(FunctionExpression),
 }
 
-impl Function {
-    pub fn identifier(&self) -> &str {
+pub trait FunctionInfo {
+    fn identifier(&self) -> &str;
+    fn parameters(&self) -> Vec<Token>;
+    fn body(&self) -> Vec<Statement>;
+}
+
+impl FunctionInfo for Function {
+    fn identifier(&self) -> &str {
         match &self {
             Function::Declaration(func) => func.identifier.lexeme.as_str(),
             Function::Expression(func) => "fn anonymous",
         }
     }
 
-    pub fn parameters(&self) -> Vec<Token> {
+    fn parameters(&self) -> Vec<Token> {
         match &self {
             Function::Declaration(func) => func.parameters.clone(),
             Function::Expression(func) => func.parameters.clone(),
         }
     }
 
-    pub fn body(&self) -> Vec<Statement> {
+    fn body(&self) -> Vec<Statement> {
         match &self {
             Function::Declaration(func) => func.body.clone(),
             Function::Expression(func) => func.body.clone(),
