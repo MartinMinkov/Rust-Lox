@@ -32,7 +32,7 @@ impl Resolver {
         }
     }
 
-    pub fn resolve_statement(&mut self, statement: &Statement) -> Result<()> {
+    pub fn resolve_statement(&mut self, statement: &mut Statement) -> Result<()> {
         match statement {
             Statement::BlockStatement(statements) => {
                 self.begin_scope();
@@ -40,18 +40,18 @@ impl Resolver {
                 self.end_scope();
                 Ok(())
             }
-            Statement::VariableDeclaration(id, init_expr) => {
-                self.declare(id);
-                if init_expr.is_some() {
-                    self.resolve_expr(init_expr.as_ref().unwrap());
+            Statement::VariableDeclaration(identifier, init_expr) => {
+                self.declare(identifier);
+                if let Some(expr) = &mut *init_expr {
+                    self.resolve_expr(expr);
                 }
-                self.define(id);
+                self.define(identifier);
                 Ok(())
             }
             Statement::FunctionDeclaration(func) => {
                 self.declare(&func.identifier);
                 self.declare(&func.identifier);
-                self.resolve_function(func.parameters(), func.body());
+                self.resolve_function(func.parameters(), &mut func.body());
                 Ok(())
             }
             Statement::ExpressionStatement(expr) => {
@@ -59,12 +59,11 @@ impl Resolver {
                 Ok(())
             }
             Statement::IfStatement(condition, then_branch, else_branch) => {
-                self.resolve_expr(&condition);
-                self.resolve_statement(&then_branch);
-                else_branch.as_ref().and_then(|else_expr| {
-                    self.resolve_statement(&else_expr);
-                    Some(else_expr)
-                });
+                self.resolve_expr(condition);
+                self.resolve_statement(then_branch);
+                if let Some(else_branch) = &mut *else_branch {
+                    self.resolve_statement(else_branch);
+                }
                 Ok(())
             }
             Statement::PrintStatement(print_expr) => {
@@ -72,23 +71,22 @@ impl Resolver {
                 Ok(())
             }
             Statement::ReturnStatement(return_expr) => {
-                return_expr.as_ref().and_then(|expr| {
-                    self.resolve_expr(&expr);
-                    Some(expr)
-                });
+                if let Some(expr) = &mut *return_expr {
+                    self.resolve_expr(expr);
+                }
                 Ok(())
             }
             Statement::WhileStatement(condition, body) => {
                 self.resolve_expr(condition);
-                self.resolve_statement(&body);
+                self.resolve_statement(body);
                 Ok(())
             }
         }
     }
 
-    pub fn resolve_expr(&mut self, expression: &ExpressionNode) -> Result<()> {
-        match expression.expression() {
-            Expression::Variable(variable) => {
+    pub fn resolve_expr(&mut self, expression: &mut ExpressionNode) -> Result<()> {
+        match expression.expr_mut() {
+            Expression::Variable(ref mut variable) => {
                 if let Some(scope) = self.peek_scope() {
                     if let Some(initializer) = scope.get(&variable.get_identifier().get_name()) {
                         if !initializer.initialized {
@@ -101,15 +99,14 @@ impl Resolver {
                         }
                     }
                 }
-                self.resolve_local(expression.expression(), variable);
+                self.resolve_local(variable);
                 Ok(())
             }
             Expression::Assignment(variable, assignment_expr) => {
-                // self.resolve(variable);
-                self.resolve_local(assignment_expr.expression(), variable);
+                self.resolve_local(variable);
                 Ok(())
             }
-            Expression::BinaryExpression(left_expr, bin_op, right_expr) => {
+            Expression::BinaryExpression(left_expr, _, right_expr) => {
                 self.resolve_expr(left_expr);
                 self.resolve_expr(right_expr);
                 Ok(())
@@ -126,50 +123,50 @@ impl Resolver {
                 Ok(())
             }
             Expression::Literal(_) => Ok(()),
-            Expression::Or(left_expr, operator, right_expr)
-            | Expression::And(left_expr, operator, right_expr) => {
+            Expression::Or(left_expr, _, right_expr)
+            | Expression::And(left_expr, _, right_expr) => {
                 self.resolve_expr(left_expr);
                 self.resolve_expr(right_expr);
                 Ok(())
             }
-            Expression::Unary(unary_op, unary_expr) => {
+            Expression::Unary(_, unary_expr) => {
                 self.resolve_expr(unary_expr);
                 Ok(())
             }
-            Expression::TernaryExpression(if_expr, ternary_op, left_expr, right_expr) => {
+            Expression::TernaryExpression(if_expr, _, left_expr, right_expr) => {
                 self.resolve_expr(if_expr);
                 self.resolve_expr(left_expr);
                 self.resolve_expr(right_expr);
                 Ok(())
             }
             Expression::FunctionExpression(func) => {
-                self.resolve_function(func.parameters(), func.body());
+                self.resolve_function(func.parameters(), &mut func.body());
                 Ok(())
             }
         }
     }
 
-    pub fn resolve_statements(&mut self, statements: &Vec<Statement>) {
+    pub fn resolve_statements(&mut self, statements: &mut Vec<Statement>) {
         for statement in statements {
             self.resolve_statement(statement);
         }
     }
 
-    fn resolve_local(&mut self, expr: &Expression, variable: &Variable) {
+    fn resolve_local(&mut self, variable: &mut Variable) {
         for (i, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key(&variable.get_identifier().get_name()) {
-                self.interpreter.resolve(expr, self.scopes.len() - i - 1);
+                variable.set_depth(i)
             }
         }
     }
 
-    fn resolve_function(&mut self, params: Vec<Identifier>, body: Vec<Statement>) {
+    fn resolve_function(&mut self, params: Vec<Identifier>, body: &mut Vec<Statement>) {
         self.begin_scope();
         for param in params {
             self.declare(&param);
             self.define(&param);
         }
-        self.resolve_statements(&body);
+        self.resolve_statements(body);
         self.end_scope()
     }
 

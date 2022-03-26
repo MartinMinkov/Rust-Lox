@@ -340,7 +340,7 @@ impl Parser {
             let token = self.advance();
             let value_expr = self.assignment()?;
 
-            match expr.expression() {
+            match expr.expr() {
                 Expression::Variable(name) => {
                     return Ok(ExpressionNode::new(
                         self.current_line(),

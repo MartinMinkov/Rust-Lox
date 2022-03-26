@@ -13,8 +13,12 @@ impl ExpressionNode {
         Self { line, expr }
     }
 
-    pub fn expression(&self) -> &Expression {
+    pub fn expr(&self) -> &Expression {
         &self.expr
+    }
+
+    pub fn expr_mut(&mut self) -> &mut Expression {
+        &mut self.expr
     }
 
     pub fn line(&self) -> usize {
@@ -187,6 +191,10 @@ impl Variable {
 
     pub fn get_depth(&self) -> Option<usize> {
         self.depth
+    }
+
+    pub fn set_depth(&mut self, depth: usize) {
+        self.depth = Some(depth)
     }
 }
 

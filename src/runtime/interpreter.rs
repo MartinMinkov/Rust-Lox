@@ -4,12 +4,10 @@ use super::Literal;
 use super::Result;
 use super::*;
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 pub struct Interpreter {
     pub environment: Rc<RefCell<Environment>>,
-    pub locals: HashMap<Expression, usize>,
 }
 
 type StatementResult = Option<Literal>;
@@ -17,18 +15,10 @@ type StatementResult = Option<Literal>;
 impl Interpreter {
     pub fn new() -> Self {
         let environment = Rc::new(RefCell::new(Environment::new()));
-        let locals = HashMap::new();
         environment
             .borrow_mut()
             .define(Clock.name().into(), Literal::Callable(Rc::new(Clock)));
-        Self {
-            environment,
-            locals,
-        }
-    }
-
-    pub fn resolve(&self, expr: &Expression, depth: usize) {
-        todo!();
+        Self { environment }
     }
 
     pub fn evaluate_statement(
@@ -133,9 +123,8 @@ impl Interpreter {
     }
 
     pub fn evaluate(&mut self, expr_node: &ExpressionNode) -> Result<Literal> {
-        let expr = expr_node.expression().clone();
         let line = expr_node.line();
-        match expr {
+        match expr_node.expr() {
             Expression::FunctionExpression(func) => {
                 let callable =
                     LoxFunction::new(Function::Expression(func.clone()), self.environment.clone());
@@ -168,7 +157,7 @@ impl Interpreter {
                     }),
                 }
             }
-            Expression::Literal(val) => Ok(val),
+            Expression::Literal(val) => Ok(val.clone()),
             Expression::Grouping(group_expr) => return self.evaluate(&*group_expr),
             Expression::Unary(unary_op, unary_expr) => {
                 let line = unary_expr.line();
