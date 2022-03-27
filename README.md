@@ -13,7 +13,7 @@ program			-> declaration* EOF ;
 declaration		-> funDecl | varDecl | statement ;
 
 varDecl			-> "var" IDENTIFIER ( "=" expression )? ";" ;
-funDecl		    -> "fun" function ;
+funDecl		        -> "fun" function ;
 function		-> IDENTIFIER "(" parameters? ")" block ;
 parameters		-> IDENTIFIER ( "," IDENTIFIER)* ;
 
@@ -54,3 +54,4 @@ These are features that are offered as challanges by the book at the end of each
 - Ternary operator
 - Comma operator
 - Anonymous functions
+- Reporting unused variables
