@@ -350,74 +350,37 @@ impl Interpreter {
         }
     }
     pub fn lookup(&self, id: &Variable, depth: Option<usize>) -> Result<Literal> {
-        let result = match depth {
-            Some(depth) => {
-                let result = match Environment::ancestor(&self.environment, depth) {
-                    Some(env) => env.borrow_mut().get(id.get_identifier().get_name()),
-                    None => None,
-                };
-                result.ok_or_else(|| Error {
-                    line: id.get_identifier().get_line(),
-                    message: String::from(format!(
-                        "Undefined {} variable.",
-                        id.get_identifier().get_name()
-                    )),
-                })
-            }
-            None => {
-                let result = match Environment::get_global(&self.environment) {
-                    Some(env) => env.borrow_mut().get(id.get_identifier().get_name()),
-                    None => None,
-                };
-                result.ok_or_else(|| Error {
-                    line: id.get_identifier().get_line(),
-                    message: String::from(format!(
-                        "Undefined {} variable.",
-                        id.get_identifier().get_name()
-                    )),
-                })
-            }
+        let environment = match depth {
+            Some(depth) => Environment::ancestor(&self.environment, depth),
+            None => Environment::get_global(&self.environment),
         };
-        // println!("Printing Lookup");
-        // Environment::print_environment(&self.environment.borrow());
-        result
+        environment
+            .and_then(|env| env.borrow_mut().get(id.get_identifier().get_name()))
+            .ok_or_else(|| Error {
+                line: id.get_identifier().get_line(),
+                message: String::from(format!(
+                    "Undefined {} variable.",
+                    id.get_identifier().get_name()
+                )),
+            })
     }
 
     pub fn assign(&self, id: &Variable, value: Literal, depth: Option<usize>) -> Result<Literal> {
-        let result = match depth {
-            Some(depth) => {
-                let result = match Environment::ancestor(&self.environment, depth) {
-                    Some(env) => env
-                        .borrow_mut()
-                        .assign(id.get_identifier().get_name(), value),
-                    None => None,
-                };
-                result.ok_or_else(|| Error {
-                    line: id.get_identifier().get_line(),
-                    message: String::from(format!(
-                        "Undefined {} variable.",
-                        id.get_identifier().get_name()
-                    )),
-                })
-            }
-            None => {
-                let result = match Environment::get_global(&self.environment) {
-                    Some(env) => env
-                        .borrow_mut()
-                        .assign(id.get_identifier().get_name(), value),
-                    None => None,
-                };
-                result.ok_or_else(|| Error {
-                    line: id.get_identifier().get_line(),
-                    message: String::from(format!(
-                        "Undefined {} variable.",
-                        id.get_identifier().get_name()
-                    )),
-                })
-            }
+        let environment = match depth {
+            Some(depth) => Environment::ancestor(&self.environment, depth),
+            None => Environment::get_global(&self.environment),
         };
-        // println!("Printing Assign");
-        // Environment::print_environment(&self.environment.borrow());
-        result
+        environment
+            .and_then(|env| {
+                env.borrow_mut()
+                    .assign(id.get_identifier().get_name(), value)
+            })
+            .ok_or_else(|| Error {
+                line: id.get_identifier().get_line(),
+                message: String::from(format!(
+                    "Undefined {} variable.",
+                    id.get_identifier().get_name()
+                )),
+            })
     }
 }
