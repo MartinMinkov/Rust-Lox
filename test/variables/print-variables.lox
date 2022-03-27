@@ -1,5 +1,9 @@
 var a = "hello";
 var b = "world";
 
+{
+    print "sneaky";
+}
+
 print a;
 print b;

@@ -47,6 +47,17 @@ impl FunctionDeclaration {
             body,
         }
     }
+    pub fn get_identifier(&self) -> String {
+        self.identifier.get_name()
+    }
+
+    pub fn get_parameters(&self) -> Vec<Identifier> {
+        self.parameters.clone()
+    }
+
+    pub fn get_body(&self) -> Vec<Statement> {
+        self.body.clone()
+    }
 }
 
 impl Display for FunctionDeclaration {
@@ -57,15 +68,15 @@ impl Display for FunctionDeclaration {
 
 impl FunctionInfo for FunctionDeclaration {
     fn identifier(&self) -> String {
-        self.identifier()
+        self.get_identifier()
     }
 
     fn parameters(&self) -> Vec<Identifier> {
-        self.parameters()
+        self.get_parameters()
     }
 
     fn body(&self) -> Vec<Statement> {
-        self.body()
+        self.get_body()
     }
 }
 
@@ -78,6 +89,18 @@ pub struct FunctionExpression {
 impl FunctionExpression {
     pub fn new(parameters: Vec<Identifier>, body: Vec<Statement>) -> Self {
         Self { parameters, body }
+    }
+
+    pub fn get_identifier(&self) -> String {
+        "fn anonymous".to_string()
+    }
+
+    pub fn get_parameters(&self) -> Vec<Identifier> {
+        self.parameters.clone()
+    }
+
+    pub fn get_body(&self) -> Vec<Statement> {
+        self.body.clone()
     }
 }
 
@@ -93,15 +116,15 @@ impl Display for FunctionExpression {
 
 impl FunctionInfo for FunctionExpression {
     fn identifier(&self) -> String {
-        self.identifier()
+        self.get_identifier()
     }
 
     fn parameters(&self) -> Vec<Identifier> {
-        self.parameters()
+        self.get_parameters()
     }
 
     fn body(&self) -> Vec<Statement> {
-        self.body()
+        self.get_body()
     }
 }
 
@@ -121,7 +144,7 @@ impl FunctionInfo for Function {
     fn identifier(&self) -> String {
         match &self {
             Function::Declaration(func) => func.identifier.get_name(),
-            Function::Expression(func) => "fn anonymous".to_string(),
+            Function::Expression(_) => "fn anonymous".to_string(),
         }
     }
 
@@ -147,10 +170,6 @@ pub struct Identifier {
 }
 
 impl Identifier {
-    pub fn new(name: String, line: usize) -> Self {
-        Self { name, line }
-    }
-
     pub fn token_to_id(token: Token) -> Self {
         Self {
             name: token.lexeme,
@@ -174,10 +193,6 @@ pub struct Variable {
 }
 
 impl Variable {
-    pub fn new(identifier: Identifier, depth: Option<usize>) -> Self {
-        return Self { identifier, depth };
-    }
-
     pub fn default(identifier: Identifier) -> Self {
         return Self {
             identifier,
@@ -185,8 +200,8 @@ impl Variable {
         };
     }
 
-    pub fn get_identifier(&self) -> Identifier {
-        self.identifier.clone()
+    pub fn get_identifier(&self) -> &Identifier {
+        &self.identifier
     }
 
     pub fn get_depth(&self) -> Option<usize> {

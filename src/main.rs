@@ -6,6 +6,7 @@ mod scanner;
 use ast::Parser;
 use common::Error;
 use runtime::Interpreter;
+use runtime::Resolver;
 use scanner::Scanner;
 use std::env;
 use std::fs;
@@ -49,10 +50,19 @@ fn run(source: std::string::String, run_in_repl: bool) {
     }
 
     let mut parser = Parser::new(scanner.tokens);
-    let statements = parser.parse();
+    let mut statements = parser.parse();
     let mut interpreter = Interpreter::new();
-    for statement in statements {
-        match interpreter.evaluate_statement(&statement, run_in_repl) {
+    let mut resolver = Resolver::new(&mut interpreter);
+    for statement in &mut statements {
+        match resolver.resolve_statement(statement) {
+            Ok(_) => {}
+            Err(err) => {
+                Error::error(err.line, err.message);
+            }
+        }
+    }
+    for statement in &statements {
+        match interpreter.evaluate_statement(statement, run_in_repl) {
             Ok(_) => {}
             Err(err) => {
                 Error::error(err.line, err.message);

@@ -24,6 +24,29 @@ impl Environment {
         }
     }
 
+    pub fn ancestor(
+        environment: &Rc<RefCell<Environment>>,
+        depth: usize,
+    ) -> Option<Rc<RefCell<Environment>>> {
+        let mut current_env = environment.clone();
+        let mut i = 0;
+        while i < depth && current_env.borrow().enclosing.is_some() {
+            let temp = current_env.borrow().enclosing.clone().unwrap();
+            current_env = temp;
+            i += 1;
+        }
+        Some(current_env)
+    }
+
+    pub fn get_global(environment: &Rc<RefCell<Environment>>) -> Option<Rc<RefCell<Environment>>> {
+        let mut current_env = environment.clone();
+        while current_env.borrow().enclosing.is_some() {
+            let temp = current_env.borrow().enclosing.clone().unwrap();
+            current_env = temp;
+        }
+        Some(current_env)
+    }
+
     pub fn define(&mut self, name: String, value: Literal) {
         self.values.insert(name, value);
     }
@@ -77,6 +100,6 @@ impl Environment {
                 .clone();
         }
         println!("---------- Printing Enclosed ----------");
-        println!();
+        println!("\n");
     }
 }

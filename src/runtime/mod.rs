@@ -12,3 +12,4 @@ pub use callable::LoxCallable;
 pub use environment::Environment;
 pub use function::LoxFunction;
 pub use interpreter::Interpreter;
+pub use resolver::Resolver;

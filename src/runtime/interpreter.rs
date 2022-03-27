@@ -185,21 +185,6 @@ impl Interpreter {
                     }
                 }
             }
-            Expression::Assignment(id, assignment_expr) => {
-                let line = assignment_expr.line();
-                let value = self.evaluate(&*assignment_expr)?;
-                let variable_name = id.get_identifier().get_name();
-                self.environment
-                    .borrow_mut()
-                    .assign(variable_name, value)
-                    .ok_or_else(|| Error {
-                        line: line.into(),
-                        message: String::from(format!(
-                            "Undefined {} variable.",
-                            id.get_identifier().get_name()
-                        )),
-                    })
-            }
             Expression::BinaryExpression(left_expr, bin_op, right_expr) => {
                 let line = left_expr.line();
                 let left = self.evaluate(&*left_expr)?;
@@ -340,17 +325,11 @@ impl Interpreter {
                     },
                 }
             }
-            Expression::Variable(id) => match self
-                .environment
-                .borrow()
-                .get(id.get_identifier().get_name())
-            {
-                Some(variable) => Ok(variable),
-                _ => Err(Error {
-                    line: id.get_identifier().get_line(),
-                    message: String::from("Variable must be defined before referenced"),
-                }),
-            },
+            Expression::Variable(id) => self.lookup(id, id.get_depth()),
+            Expression::Assignment(id, assignment_expr) => {
+                let value = self.evaluate(&*assignment_expr)?;
+                self.assign(id, value, id.get_depth())
+            }
             Expression::Or(left_expr, operator, right_expr)
             | Expression::And(left_expr, operator, right_expr) => {
                 let left = self.evaluate(&*left_expr)?;
@@ -369,5 +348,76 @@ impl Interpreter {
                 return self.evaluate(&*right_expr);
             }
         }
+    }
+    pub fn lookup(&self, id: &Variable, depth: Option<usize>) -> Result<Literal> {
+        let result = match depth {
+            Some(depth) => {
+                let result = match Environment::ancestor(&self.environment, depth) {
+                    Some(env) => env.borrow_mut().get(id.get_identifier().get_name()),
+                    None => None,
+                };
+                result.ok_or_else(|| Error {
+                    line: id.get_identifier().get_line(),
+                    message: String::from(format!(
+                        "Undefined {} variable.",
+                        id.get_identifier().get_name()
+                    )),
+                })
+            }
+            None => {
+                let result = match Environment::get_global(&self.environment) {
+                    Some(env) => env.borrow_mut().get(id.get_identifier().get_name()),
+                    None => None,
+                };
+                result.ok_or_else(|| Error {
+                    line: id.get_identifier().get_line(),
+                    message: String::from(format!(
+                        "Undefined {} variable.",
+                        id.get_identifier().get_name()
+                    )),
+                })
+            }
+        };
+        // println!("Printing Lookup");
+        // Environment::print_environment(&self.environment.borrow());
+        result
+    }
+
+    pub fn assign(&self, id: &Variable, value: Literal, depth: Option<usize>) -> Result<Literal> {
+        let result = match depth {
+            Some(depth) => {
+                let result = match Environment::ancestor(&self.environment, depth) {
+                    Some(env) => env
+                        .borrow_mut()
+                        .assign(id.get_identifier().get_name(), value),
+                    None => None,
+                };
+                result.ok_or_else(|| Error {
+                    line: id.get_identifier().get_line(),
+                    message: String::from(format!(
+                        "Undefined {} variable.",
+                        id.get_identifier().get_name()
+                    )),
+                })
+            }
+            None => {
+                let result = match Environment::get_global(&self.environment) {
+                    Some(env) => env
+                        .borrow_mut()
+                        .assign(id.get_identifier().get_name(), value),
+                    None => None,
+                };
+                result.ok_or_else(|| Error {
+                    line: id.get_identifier().get_line(),
+                    message: String::from(format!(
+                        "Undefined {} variable.",
+                        id.get_identifier().get_name()
+                    )),
+                })
+            }
+        };
+        // println!("Printing Assign");
+        // Environment::print_environment(&self.environment.borrow());
+        result
     }
 }

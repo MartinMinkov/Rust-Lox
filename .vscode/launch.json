@@ -17,7 +17,7 @@
         }
       },
       "args": [
-        "./test/functions/anonymous1.lox"
+        "./test/functions/hi.lox"
       ],
       "cwd": "${workspaceFolder}"
     },

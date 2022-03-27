@@ -1,0 +1,9 @@
+var a = 1;
+
+print "Current A";
+print a;
+
+a = a + 1;
+
+print "Updated A";
+print a;
