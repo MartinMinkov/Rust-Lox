@@ -1,0 +1,5 @@
+{
+    var b = "this is used";
+    var a = "this is not used";
+    print b;
+}

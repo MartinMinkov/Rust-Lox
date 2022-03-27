@@ -6,15 +6,33 @@ use std::mem;
 
 pub struct ResolverVariable {
     initialized: bool,
+    usages: u32,
+    pub line: usize,
 }
 
 impl ResolverVariable {
-    pub fn unresolved() -> Self {
-        Self { initialized: false }
+    pub fn unresolved(line: usize) -> Self {
+        Self {
+            initialized: false,
+            usages: 0,
+            line,
+        }
     }
 
-    pub fn resolved() -> Self {
-        Self { initialized: true }
+    pub fn resolved(line: usize) -> Self {
+        Self {
+            initialized: true,
+            usages: 0,
+            line,
+        }
+    }
+
+    pub fn increment_usages(&mut self) {
+        self.usages += 1;
+    }
+
+    pub fn is_used(&self) -> bool {
+        return self.usages > 0;
     }
 }
 
@@ -41,8 +59,7 @@ impl Resolver {
             Statement::BlockStatement(statements) => {
                 self.begin_scope();
                 self.resolve_statements(statements)?;
-                self.end_scope();
-                Ok(())
+                self.end_scope()?;
             }
             Statement::VariableDeclaration(identifier, init_expr) => {
                 self.declare(identifier)?;
@@ -50,17 +67,14 @@ impl Resolver {
                     self.resolve_expr(expr)?;
                 }
                 self.define(identifier);
-                Ok(())
             }
             Statement::FunctionDeclaration(func) => {
                 self.declare(&func.identifier)?;
                 self.define(&func.identifier);
                 self.resolve_function(&func.parameters, &mut func.body, FunctionKind::Function)?;
-                Ok(())
             }
             Statement::ExpressionStatement(expr) => {
                 self.resolve_expr(expr)?;
-                Ok(())
             }
             Statement::IfStatement(condition, then_branch, else_branch) => {
                 self.resolve_expr(condition)?;
@@ -68,41 +82,37 @@ impl Resolver {
                 if let Some(else_branch) = &mut *else_branch {
                     self.resolve_statement(else_branch)?;
                 }
-                Ok(())
             }
             Statement::PrintStatement(print_expr) => {
                 self.resolve_expr(print_expr)?;
-                Ok(())
             }
             Statement::ReturnStatement(return_expr) => {
-                match self.current_function {
-                    FunctionKind::None => {
-                        return Err(Error {
-                            line: return_expr.as_ref().unwrap().line(),
-                            message: String::from("Can't return form top-level code."),
-                        });
-                    }
-                    _ => {
-                        if let Some(expr) = &mut *return_expr {
-                            self.resolve_expr(expr)?;
-                        }
-                    }
+                if let FunctionKind::None = self.current_function {
+                    return Err(Error {
+                        line: return_expr.as_ref().unwrap().line(),
+                        message: String::from("Can't return form top-level code."),
+                    });
+                };
+                if let Some(expr) = &mut *return_expr {
+                    self.resolve_expr(expr)?;
                 }
-                Ok(())
             }
             Statement::WhileStatement(condition, body) => {
                 self.resolve_expr(condition)?;
                 self.resolve_statement(body)?;
-                Ok(())
             }
         }
+        Ok(())
     }
 
     pub fn resolve_expr(&mut self, expression: &mut ExpressionNode) -> Result<()> {
         match expression.expr_mut() {
             Expression::Variable(ref mut variable) => {
                 if let Some(scope) = self.peek_scope() {
-                    if let Some(initializer) = scope.get(&variable.get_identifier().get_name()) {
+                    if let Some(initializer) =
+                        scope.get_mut(&mut variable.get_identifier().get_name())
+                    {
+                        initializer.increment_usages();
                         if !initializer.initialized {
                             return Err(Error {
                                 line: variable.get_identifier().get_line(),
@@ -189,7 +199,7 @@ impl Resolver {
             self.define(param);
         }
         self.resolve_statements(body)?;
-        self.end_scope();
+        self.end_scope()?;
         self.current_function = enclosing_function;
         Ok(())
     }
@@ -202,7 +212,10 @@ impl Resolver {
                     message: String::from("Already a variable with this name is in this scope."),
                 });
             } else {
-                scope.insert(name.get_name(), ResolverVariable::unresolved());
+                scope.insert(
+                    name.get_name(),
+                    ResolverVariable::unresolved(name.get_line()),
+                );
             }
         };
         Ok(())
@@ -210,7 +223,7 @@ impl Resolver {
 
     fn define(&mut self, name: &Identifier) {
         if let Some(scope) = self.peek_scope() {
-            scope.insert(name.get_name(), ResolverVariable::resolved());
+            scope.insert(name.get_name(), ResolverVariable::resolved(name.get_line()));
         };
     }
 
@@ -222,7 +235,18 @@ impl Resolver {
         self.scopes.push(HashMap::new())
     }
 
-    fn end_scope(&mut self) {
+    fn end_scope(&mut self) -> Result<()> {
+        for scope in &self.scopes {
+            for (name, variable) in scope.iter() {
+                if !variable.is_used() {
+                    return Err(Error {
+                        line: variable.line,
+                        message: format!("Variable \"{}\" has no usages in this scope.", name),
+                    });
+                }
+            }
+        }
         self.scopes.pop();
+        Ok(())
     }
 }
