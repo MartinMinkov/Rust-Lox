@@ -44,7 +44,7 @@ impl Resolver {
             }
             Statement::FunctionDeclaration(func) => {
                 self.declare(&func.identifier);
-                self.declare(&func.identifier);
+                self.define(&func.identifier);
                 self.resolve_function(&func.parameters, &mut func.body)?;
                 Ok(())
             }

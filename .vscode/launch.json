@@ -17,7 +17,7 @@
         }
       },
       "args": [
-        "./test/functions/hi.lox"
+        "./test/functions/localfunction1.lox"
       ],
       "cwd": "${workspaceFolder}"
     },

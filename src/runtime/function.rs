@@ -25,7 +25,7 @@ impl LoxCallable for LoxFunction {
                 .borrow_mut()
                 .define(parameter.get_name().clone(), value.clone())
         }
-        let result = interpreter.execute_block(&self.function.body(), environment);
+        let result = interpreter.execute_block(self.function.body(), environment);
         match result {
             Ok(return_value) => match return_value {
                 Some(literal) => return Ok(literal),
