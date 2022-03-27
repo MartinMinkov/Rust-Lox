@@ -1,8 +1,6 @@
 use crate::ast::expression::Identifier;
 
-use super::{
-    Error, Expression, ExpressionNode, FunctionInfo, Interpreter, Result, Statement, Variable,
-};
+use super::{Error, Expression, ExpressionNode, Result, Statement, Variable};
 use std::collections::HashMap;
 
 pub struct ResolverVariable {
@@ -19,17 +17,13 @@ impl ResolverVariable {
     }
 }
 
-pub struct Resolver<'a> {
-    interpreter: &'a mut Interpreter,
+pub struct Resolver {
     scopes: Vec<HashMap<String, ResolverVariable>>,
 }
 
-impl<'a> Resolver<'a> {
-    pub fn new(interpreter: &'a mut Interpreter) -> Self {
-        Self {
-            interpreter,
-            scopes: Vec::new(),
-        }
+impl Resolver {
+    pub fn new() -> Self {
+        Self { scopes: Vec::new() }
     }
 
     pub fn resolve_statement(&mut self, statement: &mut Statement) -> Result<()> {
@@ -51,7 +45,7 @@ impl<'a> Resolver<'a> {
             Statement::FunctionDeclaration(func) => {
                 self.declare(&func.identifier);
                 self.declare(&func.identifier);
-                self.resolve_function(&func.parameters(), &mut func.body())?;
+                self.resolve_function(&func.parameters, &mut func.body)?;
                 Ok(())
             }
             Statement::ExpressionStatement(expr) => {
@@ -141,7 +135,7 @@ impl<'a> Resolver<'a> {
                 Ok(())
             }
             Expression::FunctionExpression(func) => {
-                self.resolve_function(&func.parameters(), &mut func.body())?;
+                self.resolve_function(&func.parameters, &mut func.body)?;
                 Ok(())
             }
         }
@@ -157,8 +151,7 @@ impl<'a> Resolver<'a> {
     fn resolve_local(&mut self, variable: &mut Variable) {
         for (i, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key(&variable.get_identifier().get_name()) {
-                println!("Setting depth for {}", variable.get_identifier().get_name());
-                variable.set_depth(i)
+                variable.set_depth(i);
             }
         }
     }
@@ -170,8 +163,8 @@ impl<'a> Resolver<'a> {
     ) -> Result<()> {
         self.begin_scope();
         for param in params {
-            self.declare(&param);
-            self.define(&param);
+            self.declare(param);
+            self.define(param);
         }
         self.resolve_statements(body)?;
         self.end_scope();

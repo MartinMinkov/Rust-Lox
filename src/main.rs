@@ -51,8 +51,7 @@ fn run(source: std::string::String, run_in_repl: bool) {
 
     let mut parser = Parser::new(scanner.tokens);
     let mut statements = parser.parse();
-    let mut interpreter = Interpreter::new();
-    let mut resolver = Resolver::new(&mut interpreter);
+    let mut resolver = Resolver::new();
     for statement in &mut statements {
         match resolver.resolve_statement(statement) {
             Ok(_) => {}
@@ -61,6 +60,8 @@ fn run(source: std::string::String, run_in_repl: bool) {
             }
         }
     }
+
+    let mut interpreter = Interpreter::new();
     for statement in &statements {
         match interpreter.evaluate_statement(statement, run_in_repl) {
             Ok(_) => {}

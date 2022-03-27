@@ -35,8 +35,8 @@ impl Display for ExpressionNode {
 #[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
     pub identifier: Identifier,
-    parameters: Vec<Identifier>,
-    body: Vec<Statement>,
+    pub parameters: Vec<Identifier>,
+    pub body: Vec<Statement>,
 }
 
 impl FunctionDeclaration {
@@ -51,12 +51,12 @@ impl FunctionDeclaration {
         self.identifier.get_name()
     }
 
-    pub fn get_parameters(&self) -> Vec<Identifier> {
-        self.parameters.clone()
+    pub fn get_parameters(&self) -> &Vec<Identifier> {
+        &self.parameters
     }
 
-    pub fn get_body(&self) -> Vec<Statement> {
-        self.body.clone()
+    pub fn get_body(&self) -> &Vec<Statement> {
+        &self.body
     }
 }
 
@@ -71,19 +71,19 @@ impl FunctionInfo for FunctionDeclaration {
         self.get_identifier()
     }
 
-    fn parameters(&self) -> Vec<Identifier> {
+    fn parameters(&self) -> &Vec<Identifier> {
         self.get_parameters()
     }
 
-    fn body(&self) -> Vec<Statement> {
+    fn body(&self) -> &Vec<Statement> {
         self.get_body()
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct FunctionExpression {
-    parameters: Vec<Identifier>,
-    body: Vec<Statement>,
+    pub parameters: Vec<Identifier>,
+    pub body: Vec<Statement>,
 }
 
 impl FunctionExpression {
@@ -95,12 +95,12 @@ impl FunctionExpression {
         "fn anonymous".to_string()
     }
 
-    pub fn get_parameters(&self) -> Vec<Identifier> {
-        self.parameters.clone()
+    pub fn get_parameters(&self) -> &Vec<Identifier> {
+        &self.parameters
     }
 
-    pub fn get_body(&self) -> Vec<Statement> {
-        self.body.clone()
+    pub fn get_body(&self) -> &Vec<Statement> {
+        &self.body
     }
 }
 
@@ -119,11 +119,11 @@ impl FunctionInfo for FunctionExpression {
         self.get_identifier()
     }
 
-    fn parameters(&self) -> Vec<Identifier> {
+    fn parameters(&self) -> &Vec<Identifier> {
         self.get_parameters()
     }
 
-    fn body(&self) -> Vec<Statement> {
+    fn body(&self) -> &Vec<Statement> {
         self.get_body()
     }
 }
@@ -136,8 +136,8 @@ pub enum Function {
 
 pub trait FunctionInfo {
     fn identifier(&self) -> String;
-    fn parameters(&self) -> Vec<Identifier>;
-    fn body(&self) -> Vec<Statement>;
+    fn parameters(&self) -> &Vec<Identifier>;
+    fn body(&self) -> &Vec<Statement>;
 }
 
 impl FunctionInfo for Function {
@@ -148,17 +148,17 @@ impl FunctionInfo for Function {
         }
     }
 
-    fn parameters(&self) -> Vec<Identifier> {
+    fn parameters(&self) -> &Vec<Identifier> {
         match &self {
-            Function::Declaration(func) => func.parameters.clone(),
-            Function::Expression(func) => func.parameters.clone(),
+            Function::Declaration(func) => &func.parameters,
+            Function::Expression(func) => &func.parameters,
         }
     }
 
-    fn body(&self) -> Vec<Statement> {
+    fn body(&self) -> &Vec<Statement> {
         match &self {
-            Function::Declaration(func) => func.body.clone(),
-            Function::Expression(func) => func.body.clone(),
+            Function::Declaration(func) => &func.body,
+            Function::Expression(func) => &func.body,
         }
     }
 }
