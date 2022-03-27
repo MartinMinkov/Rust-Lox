@@ -84,6 +84,17 @@ impl Interpreter {
                     .define(f.name().into(), Literal::Callable(Rc::new(f)));
                 Ok(None)
             }
+            Statement::ClassDeclaration(id, _methods) => {
+                self.environment
+                    .borrow_mut()
+                    .define(id.get_name(), Literal::Nil);
+
+                let class = Rc::new(LoxClass::new(id.get_name()));
+                self.environment
+                    .borrow_mut()
+                    .assign(id.get_name(), Literal::Class(class));
+                Ok(None)
+            }
             Statement::BlockStatement(statements) => {
                 match self.execute_block(
                     statements,

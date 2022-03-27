@@ -1,4 +1,4 @@
-use super::LoxCallable;
+use super::{LoxCallable, LoxClass};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::rc::Rc;
 use std::string::String;
@@ -9,6 +9,7 @@ pub enum Literal {
     Number(f64),
     Boolean(bool),
     Callable(Rc<dyn LoxCallable>),
+    Class(Rc<LoxClass>),
     Nil,
 }
 
@@ -21,6 +22,7 @@ impl Display for Literal {
             Literal::Number(val) => write!(f, "{}", val),
             Literal::Boolean(val) => write!(f, "{}", val),
             Literal::Callable(val) => write!(f, "{}", val),
+            Literal::Class(class) => write!(f, "class {}", class.to_string()),
             Literal::Nil => write!(f, "NIL"),
         }
     }
@@ -64,6 +66,7 @@ impl Literal {
     pub fn into_callable(self) -> Option<Rc<dyn LoxCallable>> {
         match self {
             Literal::Callable(f) => Some(f),
+            Literal::Class(_c) => None,
             Literal::String(_) | Literal::Number(_) | Literal::Boolean(_) | Literal::Nil => None,
         }
     }

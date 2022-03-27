@@ -73,6 +73,10 @@ impl Resolver {
                 self.define(&func.identifier);
                 self.resolve_function(&func.parameters, &mut func.body, FunctionKind::Function)?;
             }
+            Statement::ClassDeclaration(name, _methods) => {
+                self.declare(name)?;
+                self.define(name);
+            }
             Statement::ExpressionStatement(expr) => {
                 self.resolve_expr(expr)?;
             }

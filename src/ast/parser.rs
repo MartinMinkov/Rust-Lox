@@ -62,6 +62,10 @@ impl Parser {
                 self.advance();
                 self.fun_declaration("function")
             }
+            TokenType::CLASS => {
+                self.advance();
+                self.class_declaration()
+            }
             _ => self.statement(),
         };
 
@@ -137,6 +141,30 @@ impl Parser {
             parameters,
             body,
         )));
+    }
+
+    fn class_declaration(&mut self) -> ParseResult<Statement> {
+        let class_name = self.consume(TokenType::IDENTIFIER, ("Expect class name.").to_string());
+        self.consume(
+            TokenType::LEFTBRACE,
+            "Expect '{' before class body.".to_string(),
+        );
+
+        let mut methods: Vec<Box<Statement>> = vec![];
+        while self.peek().typ != TokenType::RIGHTBRACE && !self.is_at_end() {
+            let function = self.fun_declaration("method")?;
+            methods.push(Box::new(function));
+        }
+
+        self.consume(
+            TokenType::RIGHTBRACE,
+            "Expect '}' after class body.".to_string(),
+        );
+
+        Ok(Statement::ClassDeclaration(
+            Identifier::token_to_id(class_name.unwrap()),
+            methods,
+        ))
     }
 
     fn statement(&mut self) -> ParseResult<Statement> {

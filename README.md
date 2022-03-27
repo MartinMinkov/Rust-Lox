@@ -10,8 +10,9 @@ Find and support the book here:
 ```
 program			-> declaration* EOF ;
 
-declaration		-> funDecl | varDecl | statement ;
+declaration		-> clasDecl  | funDecl | varDecl | statement ;
 
+classDecl       -> "class" IDENTIFIER "{" function* "}" ;
 varDecl			-> "var" IDENTIFIER ( "=" expression )? ";" ;
 funDecl		        -> "fun" function ;
 function		-> IDENTIFIER "(" parameters? ")" block ;
