@@ -57,6 +57,7 @@ fn run(source: std::string::String, run_in_repl: bool) {
             Ok(_) => {}
             Err(err) => {
                 Error::error(err.line, err.message);
+                return;
             }
         }
     }

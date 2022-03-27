@@ -2,6 +2,7 @@ use crate::ast::expression::Identifier;
 
 use super::{Error, Expression, ExpressionNode, Result, Statement, Variable};
 use std::collections::HashMap;
+use std::mem;
 
 pub struct ResolverVariable {
     initialized: bool,
@@ -17,13 +18,22 @@ impl ResolverVariable {
     }
 }
 
+pub enum FunctionKind {
+    None,
+    Function,
+}
+
 pub struct Resolver {
     scopes: Vec<HashMap<String, ResolverVariable>>,
+    current_function: FunctionKind,
 }
 
 impl Resolver {
     pub fn new() -> Self {
-        Self { scopes: Vec::new() }
+        Self {
+            scopes: Vec::new(),
+            current_function: FunctionKind::None,
+        }
     }
 
     pub fn resolve_statement(&mut self, statement: &mut Statement) -> Result<()> {
@@ -35,7 +45,7 @@ impl Resolver {
                 Ok(())
             }
             Statement::VariableDeclaration(identifier, init_expr) => {
-                self.declare(identifier);
+                self.declare(identifier)?;
                 if let Some(expr) = &mut *init_expr {
                     self.resolve_expr(expr)?;
                 }
@@ -43,9 +53,9 @@ impl Resolver {
                 Ok(())
             }
             Statement::FunctionDeclaration(func) => {
-                self.declare(&func.identifier);
+                self.declare(&func.identifier)?;
                 self.define(&func.identifier);
-                self.resolve_function(&func.parameters, &mut func.body)?;
+                self.resolve_function(&func.parameters, &mut func.body, FunctionKind::Function)?;
                 Ok(())
             }
             Statement::ExpressionStatement(expr) => {
@@ -65,8 +75,18 @@ impl Resolver {
                 Ok(())
             }
             Statement::ReturnStatement(return_expr) => {
-                if let Some(expr) = &mut *return_expr {
-                    self.resolve_expr(expr)?;
+                match self.current_function {
+                    FunctionKind::None => {
+                        return Err(Error {
+                            line: return_expr.as_ref().unwrap().line(),
+                            message: String::from("Can't return form top-level code."),
+                        });
+                    }
+                    _ => {
+                        if let Some(expr) = &mut *return_expr {
+                            self.resolve_expr(expr)?;
+                        }
+                    }
                 }
                 Ok(())
             }
@@ -135,7 +155,7 @@ impl Resolver {
                 Ok(())
             }
             Expression::FunctionExpression(func) => {
-                self.resolve_function(&func.parameters, &mut func.body)?;
+                self.resolve_function(&func.parameters, &mut func.body, FunctionKind::Function)?;
                 Ok(())
             }
         }
@@ -160,21 +180,32 @@ impl Resolver {
         &mut self,
         params: &Vec<Identifier>,
         body: &mut Vec<Statement>,
+        function_kind: FunctionKind,
     ) -> Result<()> {
+        let enclosing_function = mem::replace(&mut self.current_function, function_kind);
         self.begin_scope();
         for param in params {
-            self.declare(param);
+            self.declare(param)?;
             self.define(param);
         }
         self.resolve_statements(body)?;
         self.end_scope();
+        self.current_function = enclosing_function;
         Ok(())
     }
 
-    fn declare(&mut self, name: &Identifier) {
+    fn declare(&mut self, name: &Identifier) -> Result<()> {
         if let Some(scope) = self.peek_scope() {
-            scope.insert(name.get_name(), ResolverVariable::unresolved());
+            if scope.contains_key(&name.get_name()) {
+                return Err(Error {
+                    line: name.get_line(),
+                    message: String::from("Already a variable with this name is in this scope."),
+                });
+            } else {
+                scope.insert(name.get_name(), ResolverVariable::unresolved());
+            }
         };
+        Ok(())
     }
 
     fn define(&mut self, name: &Identifier) {
