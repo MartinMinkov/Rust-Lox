@@ -6,19 +6,13 @@
       "request": "launch",
       "name": "Debug executable 'rust-lox'",
       "cargo": {
-        "args": [
-          "build",
-          "--bin=rust-lox",
-          "--package=rust-lox"
-        ],
+        "args": ["build", "--bin=rust-lox", "--package=rust-lox"],
         "filter": {
           "name": "rust-lox",
           "kind": "bin"
         }
       },
-      "args": [
-        "./test/functions/localfunction1.lox"
-      ],
+      "args": ["./test/functions/leaky-scope.lox"],
       "cwd": "${workspaceFolder}"
     },
     {
@@ -26,12 +20,7 @@
       "request": "launch",
       "name": "Debug unit tests in executable 'rust-lox'",
       "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--bin=rust-lox",
-          "--package=rust-lox"
-        ],
+        "args": ["test", "--no-run", "--bin=rust-lox", "--package=rust-lox"],
         "filter": {
           "name": "rust-lox",
           "kind": "bin"

@@ -2,7 +2,7 @@ pub mod error;
 pub mod literal;
 
 pub use super::ast::UnaryOperator;
-pub use super::runtime::{LoxCallable, LoxClass};
+pub use super::runtime::{LoxCallable, LoxClass, LoxInstance};
 pub use super::scanner::{Token, TokenType};
 pub use literal::Literal;
 

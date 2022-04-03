@@ -375,6 +375,16 @@ impl Parser {
                         Expression::Assignment(name.clone(), Box::new(value_expr)),
                     ))
                 }
+                Expression::GetExpression(name, get_expr) => {
+                    return Ok(ExpressionNode::new(
+                        self.current_line(),
+                        Expression::SetExpression(
+                            get_expr.clone(),
+                            name.clone(),
+                            Box::new(value_expr),
+                        ),
+                    ))
+                }
                 _ => return Err(ParseError::MissingExpr(token)),
             }
         }
@@ -510,9 +520,25 @@ impl Parser {
 
     fn call(&mut self) -> ParseResult<ExpressionNode> {
         let mut expr = self.primary()?;
-        while self.check_token_type(TokenType::LEFTPAREN) {
-            self.advance();
-            expr = self.finish_call(expr)?;
+        loop {
+            if self.check_token_type(TokenType::LEFTPAREN) {
+                self.advance();
+                expr = self.finish_call(expr)?;
+            } else if self.peek().typ == TokenType::DOT {
+                let name = self.consume(
+                    TokenType::IDENTIFIER,
+                    "Expect property name after '.'.".to_string(),
+                );
+                expr = ExpressionNode::new(
+                    self.current_line(),
+                    Expression::GetExpression(
+                        Identifier::token_to_id(name.unwrap()),
+                        Box::new(expr),
+                    ),
+                )
+            } else {
+                break;
+            }
         }
         Ok(expr)
     }

@@ -130,6 +130,15 @@ impl Resolver {
                 self.resolve_local(variable);
                 Ok(())
             }
+            Expression::GetExpression(_name, expr) => {
+                self.resolve_expr(expr)?;
+                Ok(())
+            }
+            Expression::SetExpression(object, _name, value) => {
+                self.resolve_expr(value)?;
+                self.resolve_expr(object)?;
+                Ok(())
+            }
             Expression::Assignment(variable, assignment_expr) => {
                 self.resolve_expr(assignment_expr)?;
                 self.resolve_local(variable);
@@ -240,16 +249,17 @@ impl Resolver {
     }
 
     fn end_scope(&mut self) -> Result<()> {
-        for scope in &self.scopes {
-            for (name, variable) in scope.iter() {
-                if !variable.is_used() {
-                    return Err(Error {
-                        line: variable.line,
-                        message: format!("Variable \"{}\" has no usages in this scope.", name),
-                    });
-                }
-            }
-        }
+        // TODO: This code won't work for function declarations. Fix this later.
+        // for scope in &self.scopes {
+        //     for (name, variable) in scope.iter() {
+        //         if !variable.is_used() {
+        //             return Err(Error {
+        //                 line: variable.line,
+        //                 message: format!("Variable \"{}\" has no usages in this scope.", name),
+        //             });
+        //         }
+        //     }
+        // }
         self.scopes.pop();
         Ok(())
     }

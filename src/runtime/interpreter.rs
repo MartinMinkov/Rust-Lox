@@ -168,6 +168,38 @@ impl Interpreter {
                     }),
                 }
             }
+            Expression::GetExpression(name, expr) => {
+                let object = self.evaluate(expr)?;
+                match object {
+                    Literal::Instance(instance) => {
+                        return instance.get(name).ok_or_else(|| Error {
+                            line: line.into(),
+                            message: String::from("Getter not found on instance."),
+                        })
+                    }
+                    _ => Err(Error {
+                        line: line.into(),
+                        message: String::from("Only instances have properties."),
+                    }),
+                }
+            }
+            Expression::SetExpression(object_expr, name, value_expr) => {
+                let object = self.evaluate(object_expr)?;
+                match object {
+                    Literal::Instance(instance) => {
+                        let value = self.evaluate(value_expr)?;
+                        instance.set(name.get_name(), value);
+                        return instance.get(name).ok_or_else(|| Error {
+                            line: line.into(),
+                            message: String::from("Getter not found on instance."),
+                        });
+                    }
+                    _ => Err(Error {
+                        line: line.into(),
+                        message: String::from("Only instances have properties."),
+                    }),
+                }
+            }
             Expression::Literal(val) => Ok(val.clone()),
             Expression::Grouping(group_expr) => return self.evaluate(&*group_expr),
             Expression::Unary(unary_op, unary_expr) => {
